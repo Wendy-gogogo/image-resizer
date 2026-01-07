@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>240x296 Image Converter | High-Quality JPG Export</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        body {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        h1 {
+            text-align: center;
+            color: #2d3748;
+            margin-bottom: 1.5rem;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+        .subtitle {
+            text-align: center;
+            color: #718096;
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+
+        /* 增强版上传区域 - 支持拖拽 */
+        .upload-area {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .upload-container {
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .upload-container:hover, .upload-container.drag-over {
+            border-color: #4285f4;
+            background-color: #f0f7ff;
+        }
+        #file-input {
+            display: none;
+        }
+        .upload-btn {
+            padding: 0.8rem 2.5rem;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+            margin-bottom: 1rem;
+            display: inline-block;
+        }
+        .upload-btn:hover {
+            background-color: #3367d6;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(66, 133, 244, 0.3);
+        }
+        .upload-hint {
+            color: #718096;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+        .format-tip {
+            color: #4a5568;
+            font-size: 0.85rem;
+            margin-top: 0.8rem;
+        }
+
+        /* 缩放控制区域优化 */
+        .scale-control {
+            margin: 1.5rem auto;
+            width: 240px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.8rem;
+            background-color: #f7fafc;
+            border-radius: 6px;
+        }
+        .scale-control label {
+            color: #2d3748;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+        #scale-slider {
+            flex: 1;
+            height: 6px;
+            accent-color: #4285f4;
+        }
+        #scale-value {
+            width: 60px;
+            text-align: center;
+            color: #2d3748;
+            font-weight: 600;
+            background-color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* 画布区域增强 */
+        .canvas-container {
+            text-align: center;
+            margin: 1.5rem 0;
+            position: relative;
+        }
+        #canvas {
+            border: 1px solid #e2e8f0;
+            background-color: white;
+            width: 240px;
+            height: 296px;
+            cursor: move;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            transition: box-shadow 0.2s;
+        }
+        #canvas:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .canvas-dimension {
+            color: #718096;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
+        /* 操作按钮区域 */
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1.5rem;
+        }
+        #export-btn, #reset-btn {
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+        #export-btn {
+            background-color: #0f9d58;
+            color: white;
+        }
+        #export-btn:hover {
+            background-color: #0d884e;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(15, 157, 88, 0.3);
+        }
+        #export-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        #reset-btn {
+            background-color: #f56565;
+            color: white;
+        }
+        #reset-btn:hover {
+            background-color: #e53e3e;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(245, 101, 101, 0.3);
+        }
+        #reset-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* 提示文本优化 */
+        .operation-tip {
+            margin-top: 1rem;
+            color: #4285f4;
+            font-size: 0.9rem;
+            text-align: center;
+            padding: 0.5rem;
+            background-color: #f0f7ff;
+            border-radius: 4px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .tip {
+            margin-top: 1rem;
+            color: #718096;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        /* 加载/成功提示 */
+        .notification {
+            text-align: center;
+            margin: 1rem 0;
+            padding: 0.8rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            display: none;
+        }
+        .notification.success {
+            background-color: #e6fffa;
+            color: #38b2ac;
+            display: block;
+        }
+        .notification.loading {
+            background-color: #fef7fb;
+            color: #9f7aea;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>240×296 Image Converter</h1>
+        <p class="subtitle">Upload any image format, export high-quality 240×296 JPG</p>
+        
+        <!-- 增强版上传区域（支持拖拽） -->
+        <div class="upload-area">
+            <div class="upload-container" id="upload-container">
+                <label for="file-input" class="upload-btn">Upload Image</label>
+                <input type="file" id="file-input" accept="image/*">
+                <p class="upload-hint">Or drag & drop your image here</p>
+                <p class="format-tip">Supported formats: JPG, PNG, GIF, WEBP, BMP, TIFF</p>
+            </div>
+        </div>
+
+        <!-- 加载/成功提示 -->
+        <div class="notification loading" id="loading-notice" style="display: none;">
+            🌀 Processing your image... Please wait
+        </div>
+        <div class="notification success" id="success-notice" style="display: none;">
+            ✅ Image exported successfully!
+        </div>
+        
+        <!-- 缩放控制区域 -->
+        <div class="scale-control" id="scale-control" style="display: none;">
+            <label for="scale-slider">Scale:</label>
+            <input type="range" id="scale-slider" min="0.1" max="5" step="0.05" value="1">
+            <span id="scale-value">100%</span>
+        </div>
+        
+        <!-- 画布区域 -->
+        <div class="canvas-container">
+            <canvas id="canvas" width="240" height="296"></canvas>
+            <p class="canvas-dimension">Canvas size: 240px × 296px (White background)</p>
+        </div>
+        
+        <!-- 操作按钮（新增重置按钮） -->
+        <div class="action-buttons">
+            <button id="export-btn" disabled>Export JPG (240×296)</button>
+            <button id="reset-btn" disabled>Reset Image</button>
+        </div>
+        
+        <!-- 提示文本 -->
+        <p class="operation-tip">✨ Tips: Drag to move | Scroll mouse wheel to scale | Slider for precise scaling</p>
+        <p class="tip">Exported image: 240×296 pixels • High quality (100%) JPG • White background</p>
+    </div>
+
+    <script>
+        // Get DOM elements
+        const fileInput = document.getElementById('file-input');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const exportBtn = document.getElementById('export-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const scaleSlider = document.getElementById('scale-slider');
+        const scaleValue = document.getElementById('scale-value');
+        const scaleControl = document.getElementById('scale-control');
+        const uploadContainer = document.getElementById('upload-container');
+        const loadingNotice = document.getElementById('loading-notice');
+        const successNotice = document.getElementById('success-notice');
+
+        // Image state management
+        let img = null;          
+        let originalImg = null;  // 保存原始图片，用于重置
+        let imgX = canvas.width / 2;         
+        let imgY = canvas.height / 2;         
+        let imgScale = 1;       
+        let isDragging = false; 
+        let dragStartX = 0;     
+        let dragStartY = 0;     
+
+        // Initialize canvas with white background
+        function initCanvas() {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // Draw image to canvas
+        function drawImage() {
+            if (!img) return;
+            
+            initCanvas();
+            ctx.save();
+            ctx.translate(imgX, imgY);
+            ctx.scale(imgScale, imgScale);
+            ctx.drawImage(img, -img.width / 2, -img.height / 2);
+            ctx.restore();
+        }
+
+        // Reset image to initial state
+        function resetImage() {
+            if (!originalImg) return;
+            img = originalImg;
+            imgX = canvas.width / 2;
+            imgY = canvas.height / 2;
+            imgScale = 1;
+            scaleSlider.value = 1;
+            updateScaleDisplay();
+            drawImage();
+        }
+
+        // Update scale ratio display
+        function updateScaleDisplay() {
+            const percent = (imgScale * 100).toFixed(0) + '%';
+            scaleValue.textContent = percent;
+        }
+
+        // Hide all notifications
+        function hideNotifications() {
+            loadingNotice.style.display = 'none';
+            successNotice.style.display = 'none';
+        }
+
+        // Initialize canvas
+        initCanvas();
+
+        // 拖拽上传功能
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadContainer.addEventListener(eventName, preventDefaults, false);
+        });
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadContainer.classList.add('drag-over');
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadContainer.classList.remove('drag-over');
+        });
+        uploadContainer.addEventListener('drop', handleDrop, false);
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const file = dt.files[0];
+            if (file && file.type.startsWith('image/')) {
+                handleFileUpload(file);
+            }
+        }
+
+        // 处理文件上传（通用方法）
+        function handleFileUpload(file) {
+            hideNotifications();
+            loadingNotice.style.display = 'block';
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                img = new Image();
+                img.onload = function() {
+                    originalImg = img; // 保存原始图片
+                    imgX = canvas.width / 2;
+                    imgY = canvas.height / 2;
+                    imgScale = 1;
+                    scaleSlider.value = 1;
+                    updateScaleDisplay();
+                    
+                    scaleControl.style.display = 'flex';
+                    exportBtn.disabled = false;
+                    resetBtn.disabled = false;
+                    drawImage();
+                    
+                    loadingNotice.style.display = 'none';
+                }
+                img.src = event.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+
+        // Listen for file upload (点击上传)
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            handleFileUpload(file);
+        });
+
+        // Scale slider event
+        scaleSlider.addEventListener('input', function() {
+            imgScale = parseFloat(this.value);
+            updateScaleDisplay();
+            drawImage();
+        });
+
+        // Drag functionality
+        canvas.addEventListener('mousedown', function(e) {
+            if (!img) return;
+            isDragging = true;
+            const rect = canvas.getBoundingClientRect();
+            dragStartX = e.clientX - rect.left - imgX;
+            dragStartY = e.clientY - rect.top - imgY;
+            canvas.style.cursor = 'grabbing';
+        });
+        canvas.addEventListener('mousemove', function(e) {
+            if (!isDragging || !img) return;
+            const rect = canvas.getBoundingClientRect();
+            imgX = e.clientX - rect.left - dragStartX;
+            imgY = e.clientY - rect.top - dragStartY;
+            drawImage();
+        });
+        ['mouseup', 'mouseleave'].forEach(event => {
+            canvas.addEventListener(event, function() {
+                isDragging = false;
+                canvas.style.cursor = 'move';
+            });
+        });
+
+        // Mouse wheel scaling
+        canvas.addEventListener('wheel', function(e) {
+            if (!img) return;
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -0.05 : 0.05;
+            imgScale = Math.max(0.1, Math.min(5, imgScale + delta));
+            scaleSlider.value = imgScale;
+            updateScaleDisplay();
+            drawImage();
+        }, { passive: false });
+
+        // Reset button click
+        resetBtn.addEventListener('click', function() {
+            resetImage();
+        });
+
+        // Export high-quality JPG image
+        exportBtn.addEventListener('click', function() {
+            if (!img) return;
+            hideNotifications();
+            
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = 240;
+            exportCanvas.height = 296;
+            const exportCtx = exportCanvas.getContext('2d');
+            
+            exportCtx.fillStyle = '#ffffff';
+            exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+            exportCtx.save();
+            exportCtx.translate(imgX, imgY);
+            exportCtx.scale(imgScale, imgScale);
+            exportCtx.drawImage(img, -img.width / 2, -img.height / 2);
+            exportCtx.restore();
+            
+            // 最高质量导出（1.0）
+            const jpgDataUrl = exportCanvas.toDataURL('image/jpeg', 1.0);
+            
+            const link = document.createElement('a');
+            link.href = jpgDataUrl;
+            link.download = `240x296_high_quality_${new Date().getTime()}.jpg`;
+            link.click();
+            
+            URL.revokeObjectURL(link.href);
+            
+            // 显示导出成功提示
+            successNotice.style.display = 'block';
+            setTimeout(() => {
+                successNotice.style.display = 'none';
+            }, 3000);
+        });
+    </script>
+</body>
+</html>
