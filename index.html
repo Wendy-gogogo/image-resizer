@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>240x296 Image Converter | High-Quality JPG Export</title>
+    <title>Media Converter | 240x296 Image & 128KBPS-like WAV Audio</title>
     <style>
         * {
             margin: 0;
@@ -12,7 +12,7 @@
             font-family: 'Segoe UI', Arial, sans-serif;
         }
         body {
-            max-width: 800px;
+            max-width: 900px;
             margin: 2rem auto;
             padding: 0 1rem;
             background-color: #f8f9fa;
@@ -37,7 +37,40 @@
             font-size: 0.95rem;
         }
 
-        /* 增强版上传区域 - 支持拖拽 */
+        /* 标签页样式 */
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 0.5rem;
+        }
+        .tab-btn {
+            padding: 0.8rem 2rem;
+            background-color: #f7fafc;
+            color: #4a5568;
+            border: none;
+            border-radius: 6px 6px 0 0;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            background-color: #4285f4;
+            color: white;
+        }
+        .tab-btn:hover:not(.active) {
+            background-color: #e2e8f0;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+
+        /* ---------------- 原有图片功能样式（完全保留） ---------------- */
         .upload-area {
             margin-bottom: 2rem;
             text-align: center;
@@ -85,7 +118,6 @@
             margin-top: 0.8rem;
         }
 
-        /* 缩放控制区域优化 */
         .scale-control {
             margin: 1.5rem auto;
             width: 240px;
@@ -117,7 +149,6 @@
             border: 1px solid #e2e8f0;
         }
 
-        /* 画布区域增强 */
         .canvas-container {
             text-align: center;
             margin: 1.5rem 0;
@@ -142,14 +173,13 @@
             margin-top: 0.5rem;
         }
 
-        /* 操作按钮区域 */
         .action-buttons {
             display: flex;
             gap: 1rem;
             justify-content: center;
             margin-top: 1.5rem;
         }
-        #export-btn, #reset-btn {
+        #export-btn, #reset-btn, #audio-export-btn, #audio-reset-btn {
             padding: 0.8rem 2rem;
             border: none;
             border-radius: 6px;
@@ -157,38 +187,37 @@
             font-size: 1rem;
             transition: all 0.2s;
         }
-        #export-btn {
+        #export-btn, #audio-export-btn {
             background-color: #0f9d58;
             color: white;
         }
-        #export-btn:hover {
+        #export-btn:hover, #audio-export-btn:hover {
             background-color: #0d884e;
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(15, 157, 88, 0.3);
         }
-        #export-btn:disabled {
+        #export-btn:disabled, #audio-export-btn:disabled {
             background-color: #cccccc;
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
         }
-        #reset-btn {
+        #reset-btn, #audio-reset-btn {
             background-color: #f56565;
             color: white;
         }
-        #reset-btn:hover {
+        #reset-btn:hover, #audio-reset-btn:hover {
             background-color: #e53e3e;
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(245, 101, 101, 0.3);
         }
-        #reset-btn:disabled {
+        #reset-btn:disabled, #audio-reset-btn:disabled {
             background-color: #cccccc;
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
         }
 
-        /* 提示文本优化 */
         .operation-tip {
             margin-top: 1rem;
             color: #4285f4;
@@ -208,7 +237,6 @@
             text-align: center;
         }
 
-        /* 加载/成功提示 */
         .notification {
             text-align: center;
             margin: 1rem 0;
@@ -227,262 +255,123 @@
             color: #9f7aea;
             display: block;
         }
+        .notification.error {
+            background-color: #fed7d7;
+            color: #e53e3e;
+            display: block;
+        }
+
+        /* ---------------- 新增音频功能样式 ---------------- */
+        #audio-file-input {
+            display: none;
+        }
+        .audio-info {
+            max-width: 400px;
+            margin: 1.5rem auto;
+            padding: 1rem;
+            background-color: #f7fafc;
+            border-radius: 6px;
+            display: none;
+        }
+        .audio-info.active {
+            display: block;
+        }
+        .audio-info p {
+            color: #4a5568;
+            font-size: 0.9rem;
+            margin: 0.5rem 0;
+        }
+        .audio-info span {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        .audio-player {
+            max-width: 400px;
+            margin: 1rem auto;
+            display: none;
+        }
+        .audio-player.active {
+            display: block;
+        }
+        .bitrate-hint {
+            color: #e53e3e;
+            font-size: 0.8rem;
+            text-align: center;
+            margin-top: 0.5rem;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>240×296 Image Converter</h1>
-        <p class="subtitle">Upload any image format, export high-quality 240×296 JPG</p>
+        <h1>Media Converter</h1>
+        <p class="subtitle">Image: 240×296 High-Quality JPG | Audio: 22.05KHz 128KBPS-like WAV Conversion</p>
         
-        <!-- 增强版上传区域（支持拖拽） -->
-        <div class="upload-area">
-            <div class="upload-container" id="upload-container">
-                <label for="file-input" class="upload-btn">Upload Image</label>
-                <input type="file" id="file-input" accept="image/*">
-                <p class="upload-hint">Or drag & drop your image here</p>
-                <p class="format-tip">Supported formats: JPG, PNG, GIF, WEBP, BMP, TIFF</p>
-            </div>
+        <!-- 标签页切换 -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="image-tab">Image Converter</button>
+            <button class="tab-btn" data-tab="audio-tab">Audio Converter</button>
         </div>
 
-        <!-- 加载/成功提示 -->
+        <!-- 加载/成功/错误提示 -->
         <div class="notification loading" id="loading-notice" style="display: none;">
-            🌀 Processing your image... Please wait
+            🌀 Processing... Please wait
         </div>
         <div class="notification success" id="success-notice" style="display: none;">
-            ✅ Image exported successfully!
+            ✅ Exported successfully!
         </div>
-        
-        <!-- 缩放控制区域 -->
-        <div class="scale-control" id="scale-control" style="display: none;">
-            <label for="scale-slider">Scale:</label>
-            <input type="range" id="scale-slider" min="0.1" max="5" step="0.05" value="1">
-            <span id="scale-value">100%</span>
+        <div class="notification error" id="error-notice" style="display: none;">
+            ❌ Error occurred! Please try again.
         </div>
-        
-        <!-- 画布区域 -->
-        <div class="canvas-container">
-            <canvas id="canvas" width="240" height="296"></canvas>
-            <p class="canvas-dimension">Canvas size: 240px × 296px (White background)</p>
+
+        <!-- ---------------- 原有图片功能区域（完全保留） ---------------- -->
+        <div class="tab-content active" id="image-tab">
+            <div class="upload-area">
+                <div class="upload-container" id="image-upload-container">
+                    <label for="file-input" class="upload-btn">Upload Image</label>
+                    <input type="file" id="file-input" accept="image/*">
+                    <p class="upload-hint">Or drag & drop your image here</p>
+                    <p class="format-tip">Supported formats: JPG, PNG, GIF, WEBP, BMP, TIFF</p>
+                </div>
+            </div>
+            
+            <div class="scale-control" id="scale-control" style="display: none;">
+                <label for="scale-slider">Scale:</label>
+                <input type="range" id="scale-slider" min="0.1" max="5" step="0.05" value="1">
+                <span id="scale-value">100%</span>
+            </div>
+            
+            <div class="canvas-container">
+                <canvas id="canvas" width="240" height="296"></canvas>
+                <p class="canvas-dimension">Canvas size: 240px × 296px (White background)</p>
+            </div>
+            
+            <div class="action-buttons">
+                <button id="export-btn" disabled>Export JPG (240×296)</button>
+                <button id="reset-btn" disabled>Reset Image</button>
+            </div>
+            
+            <p class="operation-tip">✨ Tips: Drag to move | Scroll mouse wheel to scale | Slider for precise scaling</p>
+            <p class="tip">Exported image: 240×296 pixels • High quality (100%) JPG • White background</p>
         </div>
-        
-        <!-- 操作按钮（新增重置按钮） -->
-        <div class="action-buttons">
-            <button id="export-btn" disabled>Export JPG (240×296)</button>
-            <button id="reset-btn" disabled>Reset Image</button>
-        </div>
-        
-        <!-- 提示文本 -->
-        <p class="operation-tip">✨ Tips: Drag to move | Scroll mouse wheel to scale | Slider for precise scaling</p>
-        <p class="tip">Exported image: 240×296 pixels • High quality (100%) JPG • White background</p>
-    </div>
 
-    <script>
-        // Get DOM elements
-        const fileInput = document.getElementById('file-input');
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        const exportBtn = document.getElementById('export-btn');
-        const resetBtn = document.getElementById('reset-btn');
-        const scaleSlider = document.getElementById('scale-slider');
-        const scaleValue = document.getElementById('scale-value');
-        const scaleControl = document.getElementById('scale-control');
-        const uploadContainer = document.getElementById('upload-container');
-        const loadingNotice = document.getElementById('loading-notice');
-        const successNotice = document.getElementById('success-notice');
-
-        // Image state management
-        let img = null;          
-        let originalImg = null;  // 保存原始图片，用于重置
-        let imgX = canvas.width / 2;         
-        let imgY = canvas.height / 2;         
-        let imgScale = 1;       
-        let isDragging = false; 
-        let dragStartX = 0;     
-        let dragStartY = 0;     
-
-        // Initialize canvas with white background
-        function initCanvas() {
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
-
-        // Draw image to canvas
-        function drawImage() {
-            if (!img) return;
+        <!-- ---------------- 新增音频功能区域 ---------------- -->
+        <div class="tab-content" id="audio-tab">
+            <div class="upload-area">
+                <div class="upload-container" id="audio-upload-container">
+                    <label for="audio-file-input" class="upload-btn">Upload Audio</label>
+                    <input type="file" id="audio-file-input" accept="audio/*">
+                    <p class="upload-hint">Or drag & drop your audio here</p>
+                    <p class="format-tip">Supported formats: MP3, WAV, OGG, FLAC, M4A</p>
+                </div>
+            </div>
             
-            initCanvas();
-            ctx.save();
-            ctx.translate(imgX, imgY);
-            ctx.scale(imgScale, imgScale);
-            ctx.drawImage(img, -img.width / 2, -img.height / 2);
-            ctx.restore();
-        }
-
-        // Reset image to initial state
-        function resetImage() {
-            if (!originalImg) return;
-            img = originalImg;
-            imgX = canvas.width / 2;
-            imgY = canvas.height / 2;
-            imgScale = 1;
-            scaleSlider.value = 1;
-            updateScaleDisplay();
-            drawImage();
-        }
-
-        // Update scale ratio display
-        function updateScaleDisplay() {
-            const percent = (imgScale * 100).toFixed(0) + '%';
-            scaleValue.textContent = percent;
-        }
-
-        // Hide all notifications
-        function hideNotifications() {
-            loadingNotice.style.display = 'none';
-            successNotice.style.display = 'none';
-        }
-
-        // Initialize canvas
-        initCanvas();
-
-        // 拖拽上传功能
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            uploadContainer.addEventListener(eventName, preventDefaults, false);
-        });
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-        ['dragenter', 'dragover'].forEach(eventName => {
-            uploadContainer.classList.add('drag-over');
-        });
-        ['dragleave', 'drop'].forEach(eventName => {
-            uploadContainer.classList.remove('drag-over');
-        });
-        uploadContainer.addEventListener('drop', handleDrop, false);
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const file = dt.files[0];
-            if (file && file.type.startsWith('image/')) {
-                handleFileUpload(file);
-            }
-        }
-
-        // 处理文件上传（通用方法）
-        function handleFileUpload(file) {
-            hideNotifications();
-            loadingNotice.style.display = 'block';
+            <div class="audio-info" id="audio-info">
+                <p>Original Sample Rate: <span id="original-sr">--</span> Hz</p>
+                <p>Target Sample Rate: <span>22050</span> Hz</p>
+                <p>Original Format: <span id="original-format">--</span></p>
+                <p>Target Format: <span>WAV (Mono, 8-bit)</span></p>
+                <p>Target Bitrate: <span>~176.4 KBPS (closest to 128 KBPS for WAV)</span></p>
+            </div>
+            <p class="bitrate-hint">Note: WAV is lossless, 128KBPS is for compressed formats (e.g. MP3). This is the closest optimization.</p>
             
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                img = new Image();
-                img.onload = function() {
-                    originalImg = img; // 保存原始图片
-                    imgX = canvas.width / 2;
-                    imgY = canvas.height / 2;
-                    imgScale = 1;
-                    scaleSlider.value = 1;
-                    updateScaleDisplay();
-                    
-                    scaleControl.style.display = 'flex';
-                    exportBtn.disabled = false;
-                    resetBtn.disabled = false;
-                    drawImage();
-                    
-                    loadingNotice.style.display = 'none';
-                }
-                img.src = event.target.result;
-            }
-            reader.readAsDataURL(file);
-        }
-
-        // Listen for file upload (点击上传)
-        fileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            handleFileUpload(file);
-        });
-
-        // Scale slider event
-        scaleSlider.addEventListener('input', function() {
-            imgScale = parseFloat(this.value);
-            updateScaleDisplay();
-            drawImage();
-        });
-
-        // Drag functionality
-        canvas.addEventListener('mousedown', function(e) {
-            if (!img) return;
-            isDragging = true;
-            const rect = canvas.getBoundingClientRect();
-            dragStartX = e.clientX - rect.left - imgX;
-            dragStartY = e.clientY - rect.top - imgY;
-            canvas.style.cursor = 'grabbing';
-        });
-        canvas.addEventListener('mousemove', function(e) {
-            if (!isDragging || !img) return;
-            const rect = canvas.getBoundingClientRect();
-            imgX = e.clientX - rect.left - dragStartX;
-            imgY = e.clientY - rect.top - dragStartY;
-            drawImage();
-        });
-        ['mouseup', 'mouseleave'].forEach(event => {
-            canvas.addEventListener(event, function() {
-                isDragging = false;
-                canvas.style.cursor = 'move';
-            });
-        });
-
-        // Mouse wheel scaling
-        canvas.addEventListener('wheel', function(e) {
-            if (!img) return;
-            e.preventDefault();
-            const delta = e.deltaY > 0 ? -0.05 : 0.05;
-            imgScale = Math.max(0.1, Math.min(5, imgScale + delta));
-            scaleSlider.value = imgScale;
-            updateScaleDisplay();
-            drawImage();
-        }, { passive: false });
-
-        // Reset button click
-        resetBtn.addEventListener('click', function() {
-            resetImage();
-        });
-
-        // Export high-quality JPG image
-        exportBtn.addEventListener('click', function() {
-            if (!img) return;
-            hideNotifications();
-            
-            const exportCanvas = document.createElement('canvas');
-            exportCanvas.width = 240;
-            exportCanvas.height = 296;
-            const exportCtx = exportCanvas.getContext('2d');
-            
-            exportCtx.fillStyle = '#ffffff';
-            exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
-            exportCtx.save();
-            exportCtx.translate(imgX, imgY);
-            exportCtx.scale(imgScale, imgScale);
-            exportCtx.drawImage(img, -img.width / 2, -img.height / 2);
-            exportCtx.restore();
-            
-            // 最高质量导出（1.0）
-            const jpgDataUrl = exportCanvas.toDataURL('image/jpeg', 1.0);
-            
-            const link = document.createElement('a');
-            link.href = jpgDataUrl;
-            link.download = `240x296_high_quality_${new Date().getTime()}.jpg`;
-            link.click();
-            
-            URL.revokeObjectURL(link.href);
-            
-            // 显示导出成功提示
-            successNotice.style.display = 'block';
-            setTimeout(() => {
-                successNotice.style.display = 'none';
-            }, 3000);
-        });
-    </script>
-</body>
-</html>
+            <audio controls class="audio-player" id="audio-player"> //
