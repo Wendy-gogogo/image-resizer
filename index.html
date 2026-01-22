@@ -3,830 +3,456 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Media Converter | 240x296 Image + WAV Audio</title>
+    <title>Media Toolkit - Image & Audio Converter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/dist/lame.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
     <style>
-        /* 保留所有原有样式，无修改 */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Arial, sans-serif;
-        }
-
-        body {
-            max-width: 900px;
-            margin: 2rem auto;
-            padding: 0 1rem;
-            background-color: #f8f9fa;
-        }
-
-        .container {
-            background: white;
-            padding: 2.5rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        }
-
-        h1 {
-            text-align: center;
-            color: #2d3748;
-            margin-bottom: 2rem;
-            font-size: 1.8rem;
-            font-weight: 600;
-        }
-
-        /* Tab Navigation */
-        .tabs {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 1rem;
-        }
-
-        .tab-btn {
-            padding: 0.8rem 2rem;
-            background-color: #e2e8f0;
-            color: #2d3748;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: all 0.2s;
-        }
-
-        .tab-btn.active {
-            background-color: #4285f4;
-            color: white;
-        }
-
-        .tab-btn:hover:not(.active) {
-            background-color: #cbd5e0;
-        }
-
-        /* Tab Content */
         .tab-content {
             display: none;
         }
-
         .tab-content.active {
             display: block;
         }
-
-        /* Image Converter Styles */
-        .subtitle {
-            text-align: center;
-            color: #718096;
-            margin-bottom: 2rem;
-            font-size: 0.95rem;
-        }
-
-        .upload-area {
-            margin-bottom: 2rem;
-            text-align: center;
-        }
-
-        .upload-container {
-            border: 2px dashed #cbd5e0;
-            border-radius: 8px;
-            padding: 2rem;
-            transition: all 0.3s ease;
-            max-width: 400px;
-            margin: 0 auto;
-        }
-
-        .upload-container:hover, .upload-container.drag-over {
-            border-color: #4285f4;
-            background-color: #f0f7ff;
-        }
-
-        #image-file-input, #audio-file-input {
-            display: none;
-        }
-
-        .upload-btn {
-            padding: 0.8rem 2.5rem;
-            background-color: #4285f4;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: all 0.2s;
-            margin-bottom: 1rem;
-            display: inline-block;
-        }
-
-        .upload-btn:hover {
-            background-color: #3367d6;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(66, 133, 244, 0.3);
-        }
-
-        .upload-hint {
-            color: #718096;
-            font-size: 0.9rem;
-            margin-top: 0.5rem;
-        }
-
-        .format-tip {
-            color: #4a5568;
-            font-size: 0.85rem;
-            margin-top: 0.8rem;
-        }
-
-        .scale-control {
-            margin: 1.5rem auto;
-            width: 240px;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 0.8rem;
-            background-color: #f7fafc;
-            border-radius: 6px;
-        }
-
-        .scale-control label {
-            color: #2d3748;
-            font-size: 0.95rem;
-            font-weight: 500;
-        }
-
-        #scale-slider {
-            flex: 1;
-            height: 6px;
-            accent-color: #4285f4;
-        }
-
-        #scale-value {
-            width: 60px;
-            text-align: center;
-            color: #2d3748;
-            font-weight: 600;
-            background-color: white;
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-            border: 1px solid #e2e8f0;
-        }
-
         .canvas-container {
-            text-align: center;
-            margin: 1.5rem 0;
             position: relative;
-        }
-
-        #canvas {
-            border: 1px solid #e2e8f0;
-            background-color: white;
             width: 240px;
             height: 296px;
-            cursor: move;
-            border-radius: 6px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-            transition: box-shadow 0.2s;
+            border: 1px solid #ddd;
+            margin: 20px auto;
+            cursor: grab;
         }
-
-        #canvas:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        .canvas-container.grabbing {
+            cursor: grabbing;
         }
-
-        .canvas-dimension {
-            color: #718096;
-            font-size: 0.85rem;
-            margin-top: 0.5rem;
+        #imageCanvas {
+            background-color: white;
         }
-
-        .action-buttons {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            margin-top: 1.5rem;
-        }
-
-        #export-image-btn, #reset-image-btn, #export-audio-btn {
-            padding: 0.8rem 2rem;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: all 0.2s;
-        }
-
-        #export-image-btn, #export-audio-btn {
-            background-color: #0f9d58;
-            color: white;
-        }
-
-        #export-image-btn:hover, #export-audio-btn:hover {
-            background-color: #0d884e;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(15, 157, 88, 0.3);
-        }
-
-        #export-image-btn:disabled, #export-audio-btn:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        #reset-image-btn {
-            background-color: #f56565;
-            color: white;
-        }
-
-        #reset-image-btn:hover {
-            background-color: #e53e3e;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(245, 101, 101, 0.3);
-        }
-
-        #reset-image-btn:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        /* Audio Converter Styles */
-        .audio-params {
-            text-align: center;
-            margin: 1.5rem 0;
-            padding: 1rem;
-            background-color: #f7fafc;
-            border-radius: 8px;
+        .slider-container {
             max-width: 400px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .audio-params h3 {
-            color: #2d3748;
-            font-size: 1rem;
-            margin-bottom: 0.8rem;
-        }
-
-        .audio-params p {
-            color: #4a5568;
-            font-size: 0.9rem;
-            line-height: 1.5;
-        }
-
-        /* Notifications */
-        .notification {
-            text-align: center;
-            margin: 1rem 0;
-            padding: 0.8rem;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            display: none;
-        }
-
-        .notification.success {
-            background-color: #e6fffa;
-            color: #38b2ac;
-            display: block;
-        }
-
-        .notification.loading {
-            background-color: #fef7fb;
-            color: #9f7aea;
-            display: block;
-        }
-
-        .notification.error {
-            background-color: #fed7d7;
-            color: #e53e3e;
-            display: block;
-        }
-
-        .operation-tip {
-            margin-top: 1rem;
-            color: #4285f4;
-            font-size: 0.9rem;
-            text-align: center;
-            padding: 0.5rem;
-            background-color: #f0f7ff;
-            border-radius: 4px;
-            max-width: 400px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .tip {
-            margin-top: 1rem;
-            color: #718096;
-            font-size: 0.9rem;
-            text-align: center;
+            margin: 20px auto;
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <h1>Media Converter</h1>
+<body class="bg-gray-100 min-h-screen">
+    <div class="max-w-4xl mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">Media Toolkit</h1>
         
-        <!-- Tab Navigation -->
-        <div class="tabs">
-            <button class="tab-btn active" data-tab="image-tab">Image Converter (240×296 JPG)</button>
-            <button class="tab-btn" data-tab="audio-tab">Audio Converter (WAV 22.05KHz/128Kbps)</button>
+        <!-- 功能切换标签 -->
+        <div class="flex justify-center mb-6 border-b">
+            <button id="tabImage" class="tab-button px-6 py-3 font-medium text-blue-600 border-b-2 border-blue-600">Image Editor</button>
+            <button id="tabAudio" class="tab-button px-6 py-3 font-medium text-gray-500 hover:text-gray-700">Audio Converter</button>
         </div>
 
-        <!-- Image Converter Tab -->
-        <div class="tab-content active" id="image-tab">
-            <p class="subtitle">Upload any image format, export high-quality 240×296 JPG</p>
+        <!-- 图片编辑功能区 -->
+        <div id="contentImage" class="tab-content active bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Image Editor (240×296 Canvas)</h2>
+            <p class="text-gray-600 mb-4 text-center">Upload an image, drag to move, scale with wheel/slider, export as high-quality JPG</p>
             
-            <div class="upload-area">
-                <div class="upload-container" id="image-upload-container">
-                    <label for="image-file-input" class="upload-btn">Upload Image</label>
-                    <input type="file" id="image-file-input" accept="image/*">
-                    <p class="upload-hint">Or drag & drop your image here</p>
-                    <p class="format-tip">Supported formats: JPG, PNG, GIF, WEBP, BMP, TIFF</p>
-                </div>
-            </div>
-
-            <div class="notification loading" id="image-loading-notice">
-                🌀 Processing your image... Please wait
-            </div>
-            <div class="notification success" id="image-success-notice">
-                ✅ Image exported successfully!
+            <!-- 图片上传 -->
+            <div class="text-center mb-4">
+                <input type="file" id="imageUpload" accept="image/*" class="mb-4">
+                <button id="resetCanvas" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded mr-2">Reset Canvas</button>
             </div>
             
-            <div class="scale-control" id="scale-control">
-                <label for="scale-slider">Scale:</label>
-                <input type="range" id="scale-slider" min="0.1" max="5" step="0.05" value="1">
-                <span id="scale-value">100%</span>
+            <!-- 画布容器 -->
+            <div class="canvas-container" id="canvasContainer">
+                <canvas id="imageCanvas" width="240" height="296"></canvas>
             </div>
             
-            <div class="canvas-container">
-                <canvas id="canvas" width="240" height="296"></canvas>
-                <p class="canvas-dimension">Canvas size: 240px × 296px (White background)</p>
+            <!-- 缩放控制 -->
+            <div class="slider-container">
+                <label for="scaleSlider" class="block text-gray-700 mb-2">Image Scale: <span id="scaleValue">100</span>%</label>
+                <input type="range" id="scaleSlider" min="10" max="500" value="100" class="w-full">
             </div>
             
-            <div class="action-buttons">
-                <button id="export-image-btn" disabled>Export JPG (240×296)</button>
-                <button id="reset-image-btn" disabled>Reset Image</button>
+            <!-- 导出按钮 -->
+            <div class="text-center mt-6">
+                <button id="exportImage" class="px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700">Export High-Quality JPG</button>
             </div>
-            
-            <p class="operation-tip">✨ Tips: Drag to move | Scroll mouse wheel to scale | Slider for precise scaling</p>
-            <p class="tip">Exported image: 240×296 pixels • High quality (100%) JPG • White background</p>
         </div>
 
-        <!-- Audio Converter Tab -->
-        <div class="tab-content" id="audio-tab">
-            <p class="subtitle">Upload any audio format, export WAV (22.05KHz, 128Kbps)</p>
+        <!-- 音频转换功能区 -->
+        <div id="contentAudio" class="tab-content bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Audio Converter (to 44.1kHz 16-bit WAV)</h2>
+            <p class="text-gray-600 mb-4 text-center">Upload any audio file (MP3, WAV, etc.) and convert to 44.1kHz 16-bit WAV</p>
             
-            <div class="upload-area">
-                <div class="upload-container" id="audio-upload-container">
-                    <label for="audio-file-input" class="upload-btn">Upload Audio</label>
-                    <input type="file" id="audio-file-input" accept="audio/*">
-                    <p class="upload-hint">Or drag & drop your audio here</p>
-                    <p class="format-tip">Supported formats: MP3, WAV, OGG, FLAC, M4A, AAC</p>
-                </div>
-            </div>
-
-            <div class="audio-params">
-                <h3>Export Parameters</h3>
-                <p>Format: WAV • Sampling Rate: 22.05 KHz • Bitrate: 128 Kbps</p>
-            </div>
-
-            <div class="notification loading" id="audio-loading-notice">
-                🌀 Processing your audio... This may take a moment
-            </div>
-            <div class="notification success" id="audio-success-notice">
-                ✅ Audio exported successfully!
-            </div>
-            <div class="notification error" id="audio-error-notice">
-                ❌ Error processing audio: <span id="audio-error-msg">Please try another file</span>
+            <!-- 音频上传 -->
+            <div class="text-center mb-6">
+                <input type="file" id="audioUpload" accept="audio/*" class="mb-4">
+                <div id="audioInfo" class="text-gray-700 mb-4 hidden"></div>
+                <div id="conversionProgress" class="text-gray-700 mb-4 hidden">Converting... Please wait</div>
             </div>
             
-            <div class="action-buttons">
-                <button id="export-audio-btn" disabled>Export WAV (22.05KHz/128Kbps)</button>
+            <!-- 转换和下载按钮 -->
+            <div class="text-center">
+                <button id="convertAudio" class="px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 mb-4 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>Convert Audio</button>
+                <button id="downloadAudio" class="px-6 py-3 bg-green-600 text-white rounded hover:bg-green-700 hidden">Download WAV File</button>
             </div>
-            
-            <p class="operation-tip">✨ Tips: Supports all common audio formats • Lossless conversion to WAV</p>
-            <p class="tip">Exported audio: WAV format • 22.05 KHz sampling rate • 128 Kbps bitrate</p>
         </div>
     </div>
 
-    <!-- FFmpeg.wasm CDN (fixed version) -->
-    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js"></script>
     <script>
-        // **************************
-        // Global Initialization & Fixes
-        // **************************
-        let ffmpeg;
-        let ffmpegLoaded = false;
-        let ffmpegLoadingError = false;
+        // -------------------------- 通用标签切换功能 --------------------------
+        const tabImage = document.getElementById('tabImage');
+        const tabAudio = document.getElementById('tabAudio');
+        const contentImage = document.getElementById('contentImage');
+        const contentAudio = document.getElementById('contentAudio');
 
-        // Initialize FFmpeg with error handling (fix: ensure proper loading)
-        async function initFFmpeg() {
-            try {
-                const { createFFmpeg, fetchFile } = FFmpeg;
-                ffmpeg = createFFmpeg({ 
-                    log: true,  // Enable logs for debugging
-                    corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.4/dist/ffmpeg-core.js'
-                });
-                await ffmpeg.load();
-                ffmpegLoaded = true;
-                console.log("✅ FFmpeg loaded successfully");
-            } catch (error) {
-                ffmpegLoadingError = true;
-                console.error("❌ FFmpeg load failed:", error);
-                document.getElementById('audio-error-msg').textContent = "FFmpeg load failed: " + error.message;
-            }
-        }
-
-        // Load FFmpeg immediately (fix: no blocking, with error handling)
-        initFFmpeg();
-
-        // **************************
-        // Tab Navigation Logic (Fixed)
-        // **************************
-        const tabBtns = document.querySelectorAll('.tab-btn');
-        const tabContents = document.querySelectorAll('.tab-content');
-
-        tabBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                tabBtns.forEach(b => b.classList.remove('active'));
-                tabContents.forEach(c => c.classList.remove('active'));
-                btn.classList.add('active');
-                const tabId = btn.getAttribute('data-tab');
-                document.getElementById(tabId).classList.add('active');
-            });
+        tabImage.addEventListener('click', () => {
+            contentImage.classList.add('active');
+            contentAudio.classList.remove('active');
+            tabImage.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
+            tabImage.classList.remove('text-gray-500');
+            tabAudio.classList.add('text-gray-500');
+            tabAudio.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
         });
 
-        // **************************
-        // Shared Utility Functions (Fix: Reusable drag/notification logic)
-        // **************************
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
+        tabAudio.addEventListener('click', () => {
+            contentAudio.classList.add('active');
+            contentImage.classList.remove('active');
+            tabAudio.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
+            tabAudio.classList.remove('text-gray-500');
+            tabImage.classList.add('text-gray-500');
+            tabImage.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
+        });
 
-        function hideAllNotifications(notificationPrefix) {
-            document.querySelectorAll(`[id^="${notificationPrefix}-"]`).forEach(el => {
-                el.style.display = 'none';
-            });
-        }
-
-        // **************************
-        // Image Converter Logic (Fully Functional + 嵌入式兼容JPG导出)
-        // **************************
-        // DOM Elements - Image
-        const imageFileInput = document.getElementById('image-file-input');
-        const canvas = document.getElementById('canvas');
+        // -------------------------- 图片编辑功能 --------------------------
+        const canvas = document.getElementById('imageCanvas');
         const ctx = canvas.getContext('2d');
-        const exportImageBtn = document.getElementById('export-image-btn');
-        const resetImageBtn = document.getElementById('reset-image-btn');
-        const scaleSlider = document.getElementById('scale-slider');
-        const scaleValue = document.getElementById('scale-value');
-        const scaleControl = document.getElementById('scale-control');
-        const imageUploadContainer = document.getElementById('image-upload-container');
-        const imageLoadingNotice = document.getElementById('image-loading-notice');
-        const imageSuccessNotice = document.getElementById('image-success-notice');
+        const canvasContainer = document.getElementById('canvasContainer');
+        const imageUpload = document.getElementById('imageUpload');
+        const scaleSlider = document.getElementById('scaleSlider');
+        const scaleValue = document.getElementById('scaleValue');
+        const exportImage = document.getElementById('exportImage');
+        const resetCanvas = document.getElementById('resetCanvas');
 
-        // Image State
-        let img = null;
-        let originalImg = null;
-        let imgX = canvas.width / 2;
-        let imgY = canvas.height / 2;
-        let imgScale = 1;
+        let uploadedImage = null;
+        let currentScale = 1.0;
+        let imageX = 0;
+        let imageY = 0;
+
+        // 拖动相关变量
         let isDragging = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let imageStartX = 0;
+        let imageStartY = 0;
 
-        // Initialize canvas (fix: show scale control only when image loaded)
+        // 初始化画布为白色
         function initCanvas() {
-            ctx.fillStyle = '#ffffff';
+            ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            scaleControl.style.display = 'none';
+            uploadedImage = null;
+            scaleSlider.value = 100;
+            currentScale = 1.0;
+            scaleValue.textContent = '100';
+            isDragging = false;
         }
 
-        function drawImage() {
-            if (!img) return;
-            
-            initCanvas();
-            ctx.save();
-            ctx.translate(imgX, imgY);
-            ctx.scale(imgScale, imgScale);
-            ctx.drawImage(img, -img.width / 2, -img.height / 2);
-            ctx.restore();
+        // 检查鼠标是否在图片范围内
+        function isMouseOverImage(mouseX, mouseY) {
+            if (!uploadedImage) return false;
+            const scaledWidth = uploadedImage.width * currentScale;
+            const scaledHeight = uploadedImage.height * currentScale;
+            return (
+                mouseX >= imageX &&
+                mouseX <= imageX + scaledWidth &&
+                mouseY >= imageY &&
+                mouseY <= imageY + scaledHeight
+            );
         }
 
-        function resetImage() {
-            if (!originalImg) return;
-            img = originalImg;
-            imgX = canvas.width / 2;
-            imgY = canvas.height / 2;
-            imgScale = 1;
-            scaleSlider.value = 1;
-            updateScaleDisplay();
-            drawImage();
+        // 获取画布上的鼠标坐标（修正偏移）
+        function getCanvasMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: (e.clientX - rect.left) * (canvas.width / rect.width),
+                y: (e.clientY - rect.top) * (canvas.height / rect.height)
+            };
         }
 
-        function updateScaleDisplay() {
-            const percent = (imgScale * 100).toFixed(0) + '%';
-            scaleValue.textContent = percent;
-        }
-
-        // Fix: Improved file upload handling with proper error checking
-        function handleImageUpload(file) {
-            if (!file || !file.type.startsWith('image/')) {
-                alert('Please upload a valid image file (JPG, PNG, GIF, etc.)!');
-                return;
-            }
-
-            hideAllNotifications('image');
-            imageLoadingNotice.style.display = 'block';
+        // 加载上传的图片
+        imageUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file || !file.type.startsWith('image/')) return;
 
             const reader = new FileReader();
-            reader.onload = function(event) {
-                img = new Image();
-                img.onload = function() {
-                    originalImg = img;
-                    imgX = canvas.width / 2;
-                    imgY = canvas.height / 2;
-                    imgScale = 1;
-                    
-                    scaleSlider.value = 1;
-                    updateScaleDisplay();
-                    scaleControl.style.display = 'flex';
-                    
-                    // Fix: Enable buttons only when image is loaded
-                    exportImageBtn.disabled = false;
-                    resetImageBtn.disabled = false;
-                    
-                    drawImage();
-                    imageLoadingNotice.style.display = 'none';
-                }
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    uploadedImage = img;
+                    // 初始位置居中
+                    imageX = (canvas.width - img.width) / 2;
+                    imageY = (canvas.height - img.height) / 2;
+                    drawImageOnCanvas();
+                };
                 img.src = event.target.result;
-            }
-            reader.onerror = function(error) {
-                alert('Failed to read image file: ' + error.message);
-                imageLoadingNotice.style.display = 'none';
-            }
+            };
             reader.readAsDataURL(file);
+        });
+
+        // 绘制图片到画布
+        function drawImageOnCanvas() {
+            // 清空画布（白底）
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            if (uploadedImage) {
+                const scaledWidth = uploadedImage.width * currentScale;
+                const scaledHeight = uploadedImage.height * currentScale;
+                ctx.drawImage(uploadedImage, imageX, imageY, scaledWidth, scaledHeight);
+            }
         }
 
-        // Initialize image canvas
-        initCanvas();
-
-        // Fix: Image drag & drop (proper event binding)
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            imageUploadContainer.addEventListener(eventName, preventDefaults, false);
-        });
-
-        ['dragenter', 'dragover'].forEach(eventName => {
-            imageUploadContainer.addEventListener(eventName, () => {
-                imageUploadContainer.classList.add('drag-over');
-            }, false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            imageUploadContainer.addEventListener(eventName, () => {
-                imageUploadContainer.classList.remove('drag-over');
-            }, false);
-        });
-
-        imageUploadContainer.addEventListener('drop', function(e) {
-            const file = e.dataTransfer.files[0];
-            if (file) handleImageUpload(file);
-        }, false);
-
-        // Fix: Image file input (proper change event)
-        imageFileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) handleImageUpload(file);
-        });
-
-        // Scale slider (working)
-        scaleSlider.addEventListener('input', function() {
-            imgScale = parseFloat(this.value);
-            updateScaleDisplay();
-            drawImage();
-        });
-
-        // Image drag (working)
-        canvas.addEventListener('mousedown', function(e) {
-            if (!img) return;
-            isDragging = true;
-            const rect = canvas.getBoundingClientRect();
-            const dragStartX = e.clientX - rect.left - imgX;
-            const dragStartY = e.clientY - rect.top - imgY;
+        // -------------------------- 新增：拖动功能 --------------------------
+        // 鼠标按下事件（开始拖动）
+        canvas.addEventListener('mousedown', (e) => {
+            if (!uploadedImage) return;
             
-            canvas.addEventListener('mousemove', moveHandler);
-            canvas.addEventListener('mouseup', stopHandler);
-            canvas.addEventListener('mouseleave', stopHandler);
-            
-            function moveHandler(e) {
-                const rect = canvas.getBoundingClientRect();
-                imgX = e.clientX - rect.left - dragStartX;
-                imgY = e.clientY - rect.top - dragStartY;
-                drawImage();
+            const mousePos = getCanvasMousePos(e);
+            // 只有点击在图片上才允许拖动
+            if (isMouseOverImage(mousePos.x, mousePos.y)) {
+                isDragging = true;
+                canvasContainer.classList.add('grabbing');
+                // 记录初始位置
+                dragStartX = mousePos.x;
+                dragStartY = mousePos.y;
+                imageStartX = imageX;
+                imageStartY = imageY;
             }
+        });
+
+        // 鼠标移动事件（拖动过程）
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDragging || !uploadedImage) return;
             
-            function stopHandler() {
+            const mousePos = getCanvasMousePos(e);
+            // 计算偏移量
+            const dx = mousePos.x - dragStartX;
+            const dy = mousePos.y - dragStartY;
+            // 更新图片位置
+            imageX = imageStartX + dx;
+            imageY = imageStartY + dy;
+            // 重新绘制
+            drawImageOnCanvas();
+        });
+
+        // 鼠标松开/离开事件（结束拖动）
+        function endDrag() {
+            if (isDragging) {
                 isDragging = false;
-                canvas.removeEventListener('mousemove', moveHandler);
-                canvas.removeEventListener('mouseup', stopHandler);
-                canvas.removeEventListener('mouseleave', stopHandler);
-                canvas.style.cursor = 'move';
+                canvasContainer.classList.remove('grabbing');
             }
-            
-            canvas.style.cursor = 'grabbing';
-        });
+        }
 
-        // Mouse wheel scaling (working)
-        canvas.addEventListener('wheel', function(e) {
-            if (!img) return;
-            e.preventDefault();
-            const delta = e.deltaY > 0 ? -0.05 : 0.05;
-            imgScale = Math.max(0.1, Math.min(5, imgScale + delta));
-            scaleSlider.value = imgScale;
-            updateScaleDisplay();
-            drawImage();
+        canvas.addEventListener('mouseup', endDrag);
+        canvas.addEventListener('mouseleave', endDrag);
+
+        // -------------------------- 新增：滚轮缩放功能 --------------------------
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault(); // 阻止页面滚动
+            if (!uploadedImage) return;
+
+            const mousePos = getCanvasMousePos(e);
+            // 计算缩放增量（每滚动一次调整5%）
+            const scaleDelta = e.deltaY > 0 ? -0.05 : 0.05;
+            const newScale = Math.max(0.1, Math.min(5.0, currentScale + scaleDelta)); // 限制缩放范围10%-500%
+            
+            // 计算缩放中心点（鼠标位置）的偏移，让缩放围绕鼠标位置进行
+            const scaledWidth = uploadedImage.width * currentScale;
+            const scaledHeight = uploadedImage.height * currentScale;
+            const mouseXInImage = mousePos.x - imageX;
+            const mouseYInImage = mousePos.y - imageY;
+            
+            // 计算新位置，保证鼠标位置相对图片不变
+            imageX = mousePos.x - (mouseXInImage * newScale / currentScale);
+            imageY = mousePos.y - (mouseYInImage * newScale / currentScale);
+            
+            // 更新缩放值
+            currentScale = newScale;
+            const scalePercent = Math.round(currentScale * 100);
+            scaleSlider.value = scalePercent;
+            scaleValue.textContent = scalePercent;
+            
+            // 重新绘制
+            drawImageOnCanvas();
         }, { passive: false });
 
-        // Reset button (working)
-        resetImageBtn.addEventListener('click', resetImage);
-
-        // ========================
-        // 核心修改：替换为嵌入式兼容的JPG导出逻辑（来自第二段代码）
-        // ========================
-        exportImageBtn.addEventListener('click', function() {
-            if (!img) return;
-            hideAllNotifications('image');
-            
-            const exportCanvas = document.createElement('canvas');
-            exportCanvas.width = 240;
-            exportCanvas.height = 296;
-            const exportCtx = exportCanvas.getContext('2d');
-            
-            exportCtx.fillStyle = '#ffffff';
-            exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
-            exportCtx.save();
-            exportCtx.translate(imgX, imgY);
-            exportCtx.scale(imgScale, imgScale);
-            exportCtx.drawImage(img, -img.width / 2, -img.height / 2);
-            exportCtx.restore();
-            
-            // 最高质量导出（1.0）- 嵌入式系统兼容版本
-            const jpgDataUrl = exportCanvas.toDataURL('image/jpeg', 1.0);
-            
-            const link = document.createElement('a');
-            link.href = jpgDataUrl;
-            link.download = `240x296_high_quality_${new Date().getTime()}.jpg`; // 关键：使用new Date().getTime()而非Date.now()
-            link.click();
-            
-            URL.revokeObjectURL(link.href);
-            
-            // 显示导出成功提示 - 第二段代码的提示逻辑
-            imageSuccessNotice.style.display = 'block';
-            setTimeout(() => {
-                imageSuccessNotice.style.display = 'none';
-            }, 3000);
+        // -------------------------- 原有：缩放条控制（同步更新） --------------------------
+        scaleSlider.addEventListener('input', (e) => {
+            const scalePercent = parseInt(e.target.value);
+            currentScale = scalePercent / 100;
+            scaleValue.textContent = scalePercent;
+            drawImageOnCanvas();
         });
 
-        // **************************
-        // Audio Converter Logic (Fixed - Core Issue Resolution)
-        // **************************
-        // DOM Elements - Audio
-        const audioFileInput = document.getElementById('audio-file-input');
-        const exportAudioBtn = document.getElementById('export-audio-btn');
-        const audioUploadContainer = document.getElementById('audio-upload-container');
-        const audioLoadingNotice = document.getElementById('audio-loading-notice');
-        const audioSuccessNotice = document.getElementById('audio-success-notice');
-        const audioErrorNotice = document.getElementById('audio-error-notice');
-        const audioErrorMsg = document.getElementById('audio-error-msg');
-
-        // Audio State
-        let audioFile = null;
-
-        // Fix: Handle audio upload (proper validation)
-        function handleAudioUpload(file) {
-            if (!file || !file.type.startsWith('audio/')) {
-                alert('Please upload a valid audio file (MP3, WAV, OGG, etc.)!');
+        // 导出高质量JPG
+        exportImage.addEventListener('click', () => {
+            if (!uploadedImage) {
+                alert('Please upload an image first!');
                 return;
             }
+            // 导出高质量JPG（quality=1.0）
+            const dataURL = canvas.toDataURL('image/jpeg', 1.0);
+            const link = document.createElement('a');
+            link.download = 'canvas-image-' + new Date().getTime() + '.jpg';
+            link.href = dataURL;
+            link.click();
+        });
 
-            audioFile = file;
-            exportAudioBtn.disabled = false;
-            hideAllNotifications('audio');
-            console.log("📁 Audio file loaded:", file.name);
-        }
+        // 重置画布
+        resetCanvas.addEventListener('click', initCanvas);
 
-        // Fix: Audio conversion with proper error handling and parameters
-        async function convertAudioToWav(file) {
-            // Pre-checks (fix: prevent conversion if FFmpeg not loaded)
-            if (ffmpegLoadingError) {
-                audioErrorMsg.textContent = "FFmpeg failed to load. Please refresh the page.";
-                audioErrorNotice.style.display = 'block';
-                return;
-            }
+        // 初始化画布
+        initCanvas();
 
-            if (!ffmpegLoaded) {
-                audioErrorMsg.textContent = "FFmpeg is still loading. Please wait a few seconds and try again.";
-                audioErrorNotice.style.display = 'block';
-                return;
-            }
+        // -------------------------- 音频转换功能 --------------------------
+        const audioUpload = document.getElementById('audioUpload');
+        const convertAudio = document.getElementById('convertAudio');
+        const downloadAudio = document.getElementById('downloadAudio');
+        const audioInfo = document.getElementById('audioInfo');
+        const conversionProgress = document.getElementById('conversionProgress');
+
+        let audioBuffer = null;
+        let convertedWavBlob = null;
+
+        // 修复音频解码的错误写法
+        audioUpload.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file || !file.type.startsWith('audio/')) return;
+
+            // 显示文件信息
+            audioInfo.textContent = `Selected file: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+            audioInfo.classList.remove('hidden');
+            
+            // 启用转换按钮
+            convertAudio.disabled = false;
 
             try {
-                hideAllNotifications('audio');
-                audioLoadingNotice.style.display = 'block';
-
-                // Fix: Handle files without extension
-                const fileNameParts = file.name.split('.');
-                const fileExt = fileNameParts.length > 1 ? fileNameParts.pop() : 'bin';
-                const inputFileName = `input_${Date.now()}.${fileExt}`;
-                const outputFileName = `output_${Date.now()}.wav`;
-
-                // Fix: Read file with fetchFile (proper method)
-                const fileData = await FFmpeg.fetchFile(file);
-                
-                // Write file to FFmpeg filesystem
-                ffmpeg.FS('writeFile', inputFileName, fileData);
-
-                // Fix: Explicit audio parameters (22.05KHz = 22050Hz, 128Kbps)
-                // Full command with fixed parameters
-                await ffmpeg.run(
-                    '-i', inputFileName,
-                    '-ar', '22050',        // 22.05 KHz sampling rate (your requirement)
-                    '-b:a', '128k',        // 128 Kbps bitrate (your requirement)
-                    '-ac', '1',            // Mono (optional, but stable)
-                    '-codec:a', 'pcm_s16le', // WAV PCM codec (standard)
-                    '-f', 'wav',           // Force WAV format
-                    '-y',                  // Overwrite output
-                    outputFileName
-                );
-
-                // Read output file
-                const outputData = ffmpeg.FS('readFile', outputFileName);
-                
-                // Create download blob (fix: correct MIME type)
-                const audioBlob = new Blob([outputData.buffer], { type: 'audio/wav' });
-                const audioUrl = URL.createObjectURL(audioBlob);
-
-                // Trigger download
-                const link = document.createElement('a');
-                link.href = audioUrl;
-                link.download = `audio_22050hz_128kbps_${Date.now()}.wav`;
-                link.click();
-
-                // Cleanup
-                URL.revokeObjectURL(audioUrl);
-                ffmpeg.FS('unlink', inputFileName);
-                ffmpeg.FS('unlink', outputFileName);
-
-                // Success notification
-                audioLoadingNotice.style.display = 'none';
-                audioSuccessNotice.style.display = 'block';
-                setTimeout(() => audioSuccessNotice.style.display = 'none', 3000);
-
+                // 正确的音频解码方式
+                const audioContext = new AudioContext();
+                const arrayBuffer = await file.arrayBuffer();
+                audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
             } catch (error) {
-                console.error("Audio conversion error:", error);
-                audioLoadingNotice.style.display = 'none';
-                audioErrorMsg.textContent = error.message.substring(0, 100) + "...";
-                audioErrorNotice.style.display = 'block';
-                setTimeout(() => audioErrorNotice.style.display = 'none', 5000);
+                alert('Failed to decode audio file: ' + error.message);
+                convertAudio.disabled = true;
+            }
+        });
+
+        // 转换音频为44.1kHz 16位WAV
+        convertAudio.addEventListener('click', async () => {
+            if (!audioBuffer) return;
+
+            conversionProgress.classList.remove('hidden');
+            convertAudio.disabled = true;
+
+            try {
+                // 转换为44.1kHz 16位WAV
+                const wavBlob = await convertAudioToWav(audioBuffer);
+                convertedWavBlob = wavBlob;
+
+                // 显示下载按钮
+                downloadAudio.classList.remove('hidden');
+                conversionProgress.classList.add('hidden');
+                alert('Audio conversion completed! You can now download the WAV file.');
+            } catch (error) {
+                conversionProgress.classList.add('hidden');
+                alert('Error converting audio: ' + error.message);
+                convertAudio.disabled = false;
+            }
+        });
+
+        // 下载转换后的WAV
+        downloadAudio.addEventListener('click', () => {
+            if (!convertedWavBlob) return;
+            saveAs(convertedWavBlob, 'converted-audio-' + new Date().getTime() + '.wav');
+        });
+
+        // 核心音频转换函数（44.1kHz 16位 WAV）
+        function convertAudioToWav(audioBuffer) {
+            return new Promise((resolve) => {
+                const targetSampleRate = 44100;
+                const numChannels = audioBuffer.numberOfChannels;
+
+                // 重采样到44.1kHz
+                const offlineContext = new OfflineAudioContext(
+                    numChannels,
+                    audioBuffer.duration * targetSampleRate,
+                    targetSampleRate
+                );
+                const source = offlineContext.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(offlineContext.destination);
+                source.start();
+
+                offlineContext.startRendering().then((renderedBuffer) => {
+                    // 将音频数据转换为16位PCM格式
+                    const interleaved = interleaveChannels(renderedBuffer);
+                    const dataView = encodeWav(interleaved, targetSampleRate, numChannels);
+                    const wavBlob = new Blob([dataView], { type: 'audio/wav' });
+                    resolve(wavBlob);
+                });
+            });
+        }
+
+        // 交错音频通道（处理立体声）
+        function interleaveChannels(buffer) {
+            const numChannels = buffer.numberOfChannels;
+            const length = buffer.length * numChannels;
+            const result = new Float32Array(length);
+            let index = 0;
+            let channelIndex = 0;
+
+            while (channelIndex < numChannels) {
+                for (let i = 0; i < buffer.length; i++) {
+                    result[index++] = buffer.getChannelData(channelIndex)[i];
+                }
+                channelIndex++;
+            }
+            return result;
+        }
+
+        // 编码为WAV格式（16位）
+        function encodeWav(samples, sampleRate, numChannels) {
+            const buffer = new ArrayBuffer(44 + samples.length * 2);
+            const view = new DataView(buffer);
+
+            // WAV文件头
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + samples.length * 2, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true); // PCM格式
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * numChannels * 2, true); // 字节率
+            view.setUint16(32, numChannels * 2, true); // 块对齐
+            view.setUint16(34, 16, true); // 16位
+            writeString(view, 36, 'data');
+            view.setUint32(40, samples.length * 2, true);
+
+            // 将Float32音频数据转换为16位整数
+            floatTo16BitPCM(view, 44, samples);
+
+            return view;
+        }
+
+        // 辅助函数：写入字符串到DataView
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
             }
         }
 
-        // Fix: Audio drag & drop (proper event binding)
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            audioUploadContainer.addEventListener(eventName, preventDefaults, false);
-        });
-
-        ['dragenter', 'dragover'].forEach(eventName => {
-            audioUploadContainer.addEventListener(eventName, () => {
-                audioUploadContainer.classList.add('drag-over');
-            }, false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            audioUploadContainer.addEventListener(eventName, () => {
-                audioUploadContainer.classList.remove('drag-over');
-            }, false);
-        });
-
-        audioUploadContainer.addEventListener('drop', function(e) {
-            const file = e.dataTransfer.files[0];
-            if (file) handleAudioUpload(file);
-        }, false);
-
-        // Fix: Audio file input (proper change event)
-        audioFileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) handleAudioUpload(file);
-        });
-
-        // Fix: Export audio button (async/await with error handling)
-        exportAudioBtn.addEventListener('click', async function() {
-            if (!audioFile) return;
-            await convertAudioToWav(audioFile);
-        });
-
-        // Initialize all notifications to hidden
-        hideAllNotifications('image');
-        hideAllNotifications('audio');
+        // 辅助函数：Float32转16位PCM
+        function floatTo16BitPCM(output, offset, input) {
+            for (let i = 0; i < input.length; i++, offset += 2) {
+                const s = Math.max(-1, Math.min(1, input[i]));
+                output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+            }
+        }
     </script>
 </body>
 </html>
