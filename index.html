@@ -38,53 +38,53 @@
     <div class="max-w-4xl mx-auto px-4 py-8">
         <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">Media Toolkit</h1>
         
-        <!--      л   ǩ -->
+        <!-- 选项卡切换 -->
         <div class="flex justify-center mb-6 border-b">
             <button id="tabImage" class="tab-button px-6 py-3 font-medium text-blue-600 border-b-2 border-blue-600">Image Editor</button>
             <button id="tabAudio" class="tab-button px-6 py-3 font-medium text-gray-500 hover:text-gray-700">Audio Converter</button>
         </div>
 
-        <!-- ͼƬ ༭       -->
+        <!-- 图片编辑面板 -->
         <div id="contentImage" class="tab-content active bg-white p-6 rounded-lg shadow-md">
-            <h2 class="text-xl font-semibold text-gray-700 mb-4">Image Editor (240  296 Canvas)</h2>
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Image Editor (240×296 Canvas)</h2>
             <p class="text-gray-600 mb-4 text-center">Upload an image, drag to move, scale with wheel/slider, export as high-quality JPG</p>
             
-            <!-- ͼƬ ϴ  -->
+            <!-- 图片上传 -->
             <div class="text-center mb-4">
                 <input type="file" id="imageUpload" accept="image/*" class="mb-4">
                 <button id="resetCanvas" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded mr-2">Reset Canvas</button>
             </div>
             
-            <!--          -->
+            <!-- 画布容器 -->
             <div class="canvas-container" id="canvasContainer">
                 <canvas id="imageCanvas" width="240" height="296"></canvas>
             </div>
             
-            <!--    ſ    -->
+            <!-- 缩放滑块 -->
             <div class="slider-container">
                 <label for="scaleSlider" class="block text-gray-700 mb-2">Image Scale: <span id="scaleValue">100</span>%</label>
                 <input type="range" id="scaleSlider" min="10" max="500" value="100" class="w-full">
             </div>
             
-            <!--       ť -->
+            <!-- 导出按钮 -->
             <div class="text-center mt-6">
                 <button id="exportImage" class="px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700">Export High-Quality JPG</button>
             </div>
         </div>
 
-        <!--   Ƶת         -->
+        <!-- 音频转换面板 -->
         <div id="contentAudio" class="tab-content bg-white p-6 rounded-lg shadow-md">
             <h2 class="text-xl font-semibold text-gray-700 mb-4">Audio Converter (to 44.1kHz 16-bit WAV)</h2>
             <p class="text-gray-600 mb-4 text-center">Upload any audio file (MP3, WAV, etc.) and convert to 44.1kHz 16-bit WAV</p>
             
-            <!--   Ƶ ϴ  -->
+            <!-- 音频上传 -->
             <div class="text-center mb-6">
                 <input type="file" id="audioUpload" accept="audio/*" class="mb-4">
                 <div id="audioInfo" class="text-gray-700 mb-4 hidden"></div>
                 <div id="conversionProgress" class="text-gray-700 mb-4 hidden">Converting... Please wait</div>
             </div>
             
-            <!-- ת       ذ ť -->
+            <!-- 转换和下载按钮 -->
             <div class="text-center">
                 <button id="convertAudio" class="px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 mb-4 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>Convert Audio</button>
                 <button id="downloadAudio" class="px-6 py-3 bg-green-600 text-white rounded hover:bg-green-700 hidden">Download WAV File</button>
@@ -93,7 +93,7 @@
     </div>
 
     <script>
-        // -------------------------- ͨ ñ ǩ л      --------------------------
+        // -------------------------- 通用选项卡切换逻辑 --------------------------
         const tabImage = document.getElementById('tabImage');
         const tabAudio = document.getElementById('tabAudio');
         const contentImage = document.getElementById('contentImage');
@@ -117,7 +117,7 @@
             tabImage.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
         });
 
-        // -------------------------- ͼƬ ༭     --------------------------
+        // -------------------------- 图片编辑逻辑 --------------------------
         const canvas = document.getElementById('imageCanvas');
         const ctx = canvas.getContext('2d');
         const canvasContainer = document.getElementById('canvasContainer');
@@ -132,14 +132,14 @@
         let imageX = 0;
         let imageY = 0;
 
-        //  ϶   ر   
+        // 拖拽相关变量
         let isDragging = false;
         let dragStartX = 0;
         let dragStartY = 0;
         let imageStartX = 0;
         let imageStartY = 0;
 
-        //   ʼ      Ϊ  ɫ
+        // 初始化画布为白色
         function initCanvas() {
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -150,7 +150,7 @@
             isDragging = false;
         }
 
-        //        Ƿ   ͼƬ  Χ  
+        // 检查鼠标是否在图片范围内
         function isMouseOverImage(mouseX, mouseY) {
             if (!uploadedImage) return false;
             const scaledWidth = uploadedImage.width * currentScale;
@@ -163,7 +163,7 @@
             );
         }
 
-        //   ȡ     ϵ       ꣨    ƫ ƣ 
+        // 获取鼠标在画布上的坐标（修正缩放）
         function getCanvasMousePos(e) {
             const rect = canvas.getBoundingClientRect();
             return {
@@ -172,7 +172,7 @@
             };
         }
 
-        //      ϴ   ͼƬ
+        // 处理上传的图片
         imageUpload.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file || !file.type.startsWith('image/')) return;
@@ -182,7 +182,7 @@
                 const img = new Image();
                 img.onload = () => {
                     uploadedImage = img;
-                    //   ʼλ þ   
+                    // 初始位置居中
                     imageX = (canvas.width - img.width) / 2;
                     imageY = (canvas.height - img.height) / 2;
                     drawImageOnCanvas();
@@ -192,9 +192,9 @@
             reader.readAsDataURL(file);
         });
 
-        //     ͼƬ      
+        // 绘制图片到画布
         function drawImageOnCanvas() {
-            //   ջ      ׵ף 
+            // 清空画布并填充白色
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
@@ -205,17 +205,17 @@
             }
         }
 
-        // --------------------------        ϶      --------------------------
-        //   갴   ¼     ʼ ϶   
+        // -------------------------- 图片拖拽逻辑 --------------------------
+        // 鼠标按下事件：开始拖拽
         canvas.addEventListener('mousedown', (e) => {
             if (!uploadedImage) return;
             
             const mousePos = getCanvasMousePos(e);
-            // ֻ е    ͼƬ ϲ      ϶ 
+            // 只有点击在图片上才能开始拖拽
             if (isMouseOverImage(mousePos.x, mousePos.y)) {
                 isDragging = true;
                 canvasContainer.classList.add('grabbing');
-                //   ¼  ʼλ  
+                // 记录初始位置
                 dragStartX = mousePos.x;
                 dragStartY = mousePos.y;
                 imageStartX = imageX;
@@ -223,22 +223,22 @@
             }
         });
 
-        //     ƶ  ¼    ϶    ̣ 
+        // 鼠标移动事件：拖拽图片
         canvas.addEventListener('mousemove', (e) => {
             if (!isDragging || !uploadedImage) return;
             
             const mousePos = getCanvasMousePos(e);
-            //     ƫ    
+            // 计算偏移量
             const dx = mousePos.x - dragStartX;
             const dy = mousePos.y - dragStartY;
-            //     ͼƬλ  
+            // 更新图片位置
             imageX = imageStartX + dx;
             imageY = imageStartY + dy;
-            //    »   
+            // 重新绘制
             drawImageOnCanvas();
         });
 
-        //     ɿ / 뿪 ¼        ϶   
+        // 鼠标松开/离开事件：结束拖拽
         function endDrag() {
             if (isDragging) {
                 isDragging = false;
@@ -249,37 +249,37 @@
         canvas.addEventListener('mouseup', endDrag);
         canvas.addEventListener('mouseleave', endDrag);
 
-        // --------------------------              Ź    --------------------------
+        // -------------------------- 图片缩放逻辑（滚轮+滑块） --------------------------
         canvas.addEventListener('wheel', (e) => {
-            e.preventDefault(); //   ֹҳ     
+            e.preventDefault(); // 阻止页面滚动
             if (!uploadedImage) return;
 
             const mousePos = getCanvasMousePos(e);
-            //               ÿ    һ ε   5%  
+            // 每次滚轮调整5%的缩放
             const scaleDelta = e.deltaY > 0 ? -0.05 : 0.05;
-            const newScale = Math.max(0.1, Math.min(5.0, currentScale + scaleDelta)); //        ŷ Χ10%-500%
+            const newScale = Math.max(0.1, Math.min(5.0, currentScale + scaleDelta)); // 限制缩放范围10%-500%
             
-            //            ĵ㣨   λ ã   ƫ ƣ       Χ     λ ý   
+            // 以鼠标点为中心缩放（修正位置偏移，保持缩放中心不变）
             const scaledWidth = uploadedImage.width * currentScale;
             const scaledHeight = uploadedImage.height * currentScale;
             const mouseXInImage = mousePos.x - imageX;
             const mouseYInImage = mousePos.y - imageY;
             
-            //       λ ã   ֤   λ     ͼƬ    
+            // 调整位置，确保缩放中心在鼠标位置
             imageX = mousePos.x - (mouseXInImage * newScale / currentScale);
             imageY = mousePos.y - (mouseYInImage * newScale / currentScale);
             
-            //         ֵ
+            // 更新缩放值
             currentScale = newScale;
             const scalePercent = Math.round(currentScale * 100);
             scaleSlider.value = scalePercent;
             scaleValue.textContent = scalePercent;
             
-            //    »   
+            // 重新绘制
             drawImageOnCanvas();
         }, { passive: false });
 
-        // -------------------------- ԭ У          ƣ ͬ     £  --------------------------
+        // 滑块缩放（与滚轮同步）
         scaleSlider.addEventListener('input', (e) => {
             const scalePercent = parseInt(e.target.value);
             currentScale = scalePercent / 100;
@@ -287,13 +287,13 @@
             drawImageOnCanvas();
         });
 
-        //           JPG
+        // 导出高清JPG
         exportImage.addEventListener('click', () => {
             if (!uploadedImage) {
                 alert('Please upload an image first!');
                 return;
             }
-            //           JPG  quality=1.0  
+            // 导出高清JPG（quality=1.0）
             const dataURL = canvas.toDataURL('image/jpeg', 1.0);
             const link = document.createElement('a');
             link.download = 'canvas-image-' + new Date().getTime() + '.jpg';
@@ -301,13 +301,13 @@
             link.click();
         });
 
-        //    û   
+        // 重置画布
         resetCanvas.addEventListener('click', initCanvas);
 
-        //   ʼ      
+        // 初始化画布
         initCanvas();
 
-        // --------------------------   Ƶת       --------------------------
+        // -------------------------- 音频转换逻辑 --------------------------
         const audioUpload = document.getElementById('audioUpload');
         const convertAudio = document.getElementById('convertAudio');
         const downloadAudio = document.getElementById('downloadAudio');
@@ -317,20 +317,20 @@
         let audioBuffer = null;
         let convertedWavBlob = null;
 
-        //  ޸   Ƶ    Ĵ   д  
+        // 处理音频文件选择
         audioUpload.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file || !file.type.startsWith('audio/')) return;
 
-            //   ʾ ļ   Ϣ
+            // 显示文件信息
             audioInfo.textContent = `Selected file: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
             audioInfo.classList.remove('hidden');
             
-            //     ת    ť
+            // 启用转换按钮
             convertAudio.disabled = false;
 
             try {
-                //   ȷ    Ƶ   뷽ʽ
+                // 解码音频格式
                 const audioContext = new AudioContext();
                 const arrayBuffer = await file.arrayBuffer();
                 audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
@@ -340,7 +340,7 @@
             }
         });
 
-        // ת    ƵΪ44.1kHz 16λWAV
+        // 转换音频为44.1kHz 16-bit WAV
         convertAudio.addEventListener('click', async () => {
             if (!audioBuffer) return;
 
@@ -348,11 +348,11 @@
             convertAudio.disabled = true;
 
             try {
-                // ת  Ϊ44.1kHz 16λWAV
+                // 转换为44.1kHz 16位WAV
                 const wavBlob = await convertAudioToWav(audioBuffer);
                 convertedWavBlob = wavBlob;
 
-                //   ʾ   ذ ť
+                // 显示下载按钮
                 downloadAudio.classList.remove('hidden');
                 conversionProgress.classList.add('hidden');
                 alert('Audio conversion completed! You can now download the WAV file.');
@@ -363,90 +363,99 @@
             }
         });
 
-        //     ת     WAV
+        // 下载转换后的WAV
         downloadAudio.addEventListener('click', () => {
             if (!convertedWavBlob) return;
             saveAs(convertedWavBlob, 'converted-audio-' + new Date().getTime() + '.wav');
         });
 
-        //       Ƶת        44.1kHz 16λ WAV  
+        // 核心修复：音频转换为44.1kHz 16位 WAV（修正采样率转换逻辑）
         function convertAudioToWav(audioBuffer) {
-            return new Promise((resolve) => {
+            return new Promise((resolve, reject) => {
                 const targetSampleRate = 44100;
+                const originalSampleRate = audioBuffer.sampleRate;
                 const numChannels = audioBuffer.numberOfChannels;
 
-                //  ز     44.1kHz
+                // 关键修复：计算正确的目标采样点数（基于原始采样率和目标采样率的比例）
+                const targetLength = Math.round(audioBuffer.length * (targetSampleRate / originalSampleRate));
+                
+                // 创建离线音频上下文（使用正确的长度）
                 const offlineContext = new OfflineAudioContext(
                     numChannels,
-                    audioBuffer.duration * targetSampleRate,
+                    targetLength,
                     targetSampleRate
                 );
+
+                // 创建音频源并连接到输出
                 const source = offlineContext.createBufferSource();
                 source.buffer = audioBuffer;
                 source.connect(offlineContext.destination);
                 source.start();
 
-                offlineContext.startRendering().then((renderedBuffer) => {
-                    //     Ƶ    ת  Ϊ16λPCM  ʽ
-                    const interleaved = interleaveChannels(renderedBuffer);
-                    const dataView = encodeWav(interleaved, targetSampleRate, numChannels);
-                    const wavBlob = new Blob([dataView], { type: 'audio/wav' });
-                    resolve(wavBlob);
-                });
+                // 渲染音频（完成采样率转换）
+                offlineContext.startRendering()
+                    .then((renderedBuffer) => {
+                        // 交错音频通道
+                        const interleaved = interleaveChannels(renderedBuffer);
+                        // 编码为16位WAV格式
+                        const dataView = encodeWav(interleaved, targetSampleRate, numChannels);
+                        const wavBlob = new Blob([dataView], { type: 'audio/wav' });
+                        resolve(wavBlob);
+                    })
+                    .catch(reject);
             });
         }
 
-        //       Ƶͨ                
+        // 交错多通道音频数据（适配WAV格式）
         function interleaveChannels(buffer) {
             const numChannels = buffer.numberOfChannels;
             const length = buffer.length * numChannels;
             const result = new Float32Array(length);
             let index = 0;
-            let channelIndex = 0;
 
-            while (channelIndex < numChannels) {
-                for (let i = 0; i < buffer.length; i++) {
-                    result[index++] = buffer.getChannelData(channelIndex)[i];
+            // 逐样本交错通道（左→右→左→右...）
+            for (let i = 0; i < buffer.length; i++) {
+                for (let channel = 0; channel < numChannels; channel++) {
+                    result[index++] = buffer.getChannelData(channel)[i];
                 }
-                channelIndex++;
             }
             return result;
         }
 
-        //     ΪWAV  ʽ  16λ  
+        // 编码为WAV格式（16位PCM）
         function encodeWav(samples, sampleRate, numChannels) {
             const buffer = new ArrayBuffer(44 + samples.length * 2);
             const view = new DataView(buffer);
 
-            // WAV ļ ͷ
+            // WAV文件头（标准RIFF格式）
             writeString(view, 0, 'RIFF');
-            view.setUint32(4, 36 + samples.length * 2, true);
+            view.setUint32(4, 36 + samples.length * 2, true); // 文件大小
             writeString(view, 8, 'WAVE');
             writeString(view, 12, 'fmt ');
-            view.setUint32(16, 16, true);
-            view.setUint16(20, 1, true); // PCM  ʽ
-            view.setUint16(22, numChannels, true);
-            view.setUint32(24, sampleRate, true);
-            view.setUint32(28, sampleRate * numChannels * 2, true); //  ֽ   
-            view.setUint16(32, numChannels * 2, true); //      
-            view.setUint16(34, 16, true); // 16λ
+            view.setUint32(16, 16, true); // PCM格式块大小
+            view.setUint16(20, 1, true);  // PCM编码（1 = 线性PCM）
+            view.setUint16(22, numChannels, true); // 通道数
+            view.setUint32(24, sampleRate, true); // 采样率
+            view.setUint32(28, sampleRate * numChannels * 2, true); // 字节率
+            view.setUint16(32, numChannels * 2, true); // 块对齐
+            view.setUint16(34, 16, true); // 位深度（16位）
             writeString(view, 36, 'data');
-            view.setUint32(40, samples.length * 2, true);
+            view.setUint32(40, samples.length * 2, true); // 数据块大小
 
-            //   Float32  Ƶ    ת  Ϊ16λ    
+            // 将Float32音频数据转换为16位PCM
             floatTo16BitPCM(view, 44, samples);
 
             return view;
         }
 
-        //           д   ַ     DataView
+        // 辅助：向DataView写入字符串
         function writeString(view, offset, string) {
             for (let i = 0; i < string.length; i++) {
                 view.setUint8(offset + i, string.charCodeAt(i));
             }
         }
 
-        //           Float32ת16λPCM
+        // 辅助：Float32转16位PCM（-1~1 → -32768~32767）
         function floatTo16BitPCM(output, offset, input) {
             for (let i = 0; i < input.length; i++, offset += 2) {
                 const s = Math.max(-1, Math.min(1, input[i]));
