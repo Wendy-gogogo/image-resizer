@@ -32,12 +32,12 @@
             max-width: 400px;
             margin: 20px auto;
         }
-        .audio-option-group {
-            margin: 12px 0;
+        .audio-option {
+            margin: 10px 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 16px;
+            gap: 8px;
             flex-wrap: wrap;
         }
     </style>
@@ -46,65 +46,67 @@
     <div class="max-w-4xl mx-auto px-4 py-8">
         <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">Media Toolkit</h1>
         
-        <!-- Tab Switch -->
+        <!-- 选项卡切换 -->
         <div class="flex justify-center mb-6 border-b">
             <button id="tabImage" class="tab-button px-6 py-3 font-medium text-blue-600 border-b-2 border-blue-600">Image Editor</button>
             <button id="tabAudio" class="tab-button px-6 py-3 font-medium text-gray-500 hover:text-gray-700">Audio Converter</button>
         </div>
 
-        <!-- Image Editor (Completely Unchanged) -->
+        <!-- 图片编辑内容（完全不变） -->
         <div id="contentImage" class="tab-content active bg-white p-6 rounded-lg shadow-md">
             <h2 class="text-xl font-semibold text-gray-700 mb-4">Image Editor (240×296 Canvas)</h2>
             <p class="text-gray-600 mb-4 text-center">Upload an image, drag to move, scale with wheel/slider, export as high-quality JPG</p>
             
+            <!-- 图片上传 -->
             <div class="text-center mb-4">
                 <input type="file" id="imageUpload" accept="image/*" class="mb-4">
                 <button id="resetCanvas" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded mr-2">Reset Canvas</button>
             </div>
             
+            <!-- 画布容器 -->
             <div class="canvas-container" id="canvasContainer">
                 <canvas id="imageCanvas" width="240" height="296"></canvas>
             </div>
             
+            <!-- 缩放滑块 -->
             <div class="slider-container">
                 <label for="scaleSlider" class="block text-gray-700 mb-2">Image Scale: <span id="scaleValue">100</span>%</label>
                 <input type="range" id="scaleSlider" min="10" max="500" value="100" class="w-full">
             </div>
             
+            <!-- 导出按钮 -->
             <div class="text-center mt-6">
                 <button id="exportImage" class="px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700">Export High-Quality JPG</button>
             </div>
         </div>
 
-        <!-- Audio Converter with Selectable Sample Rate & Channel Mode -->
+        <!-- 音频转换内容（新增采样率选项） -->
         <div id="contentAudio" class="tab-content bg-white p-6 rounded-lg shadow-md">
-            <h2 class="text-xl font-semibold text-gray-700 mb-4">Audio Converter (16-bit WAV)</h2>
-            <p class="text-gray-600 mb-4 text-center">Upload any audio, choose sample rate and channel mode</p>
-
-            <!-- Sample Rate Selection -->
-            <div class="audio-option-group">
-                <span class="font-medium">Sample Rate:</span>
-                <input type="radio" id="rate22" name="sampleRateOpt" value="22050">
-                <label for="rate22">22.05 kHz (Small File)</label>
-                <input type="radio" id="rate44" name="sampleRateOpt" value="44100" checked>
-                <label for="rate44">44.1 kHz (Standard Quality)</label>
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Audio Converter (to 22.05kHz/44.1kHz 16-bit WAV)</h2>
+            <p class="text-gray-600 mb-4 text-center">Upload any audio file, convert to small size WAV (22.05kHz default)</p>
+            
+            <!-- 音频优化选项 -->
+            <div class="audio-option">
+                <input type="radio" id="mono" name="audioChannel" value="mono" checked>
+                <label for="mono">Mono (Smaller File)</label>
+                <input type="radio" id="stereo" name="audioChannel" value="stereo" style="margin-left: 16px;">
+                <label for="stereo">Stereo (Original Quality)</label>
             </div>
-
-            <!-- Channel Mode Selection -->
-            <div class="audio-option-group">
-                <span class="font-medium">Channel Mode:</span>
-                <input type="radio" id="monoOpt" name="channelOpt" value="mono">
-                <label for="monoOpt">Mono (Half Size)</label>
-                <input type="radio" id="stereoOpt" name="channelOpt" value="stereo" checked>
-                <label for="stereoOpt">Stereo</label>
+            <div class="audio-option">
+                <input type="radio" id="22k" name="sampleRate" value="22050" checked>
+                <label for="22k">22.05kHz (Smallest File, 50% Size)</label>
+                <input type="radio" id="44k" name="sampleRate" value="44100" style="margin-left: 16px;">
+                <label for="44k">44.1kHz (Original Quality)</label>
             </div>
             
+            <!-- 音频上传 -->
             <div class="text-center mb-6">
                 <input type="file" id="audioUpload" accept="audio/*" class="mb-4">
                 <div id="audioInfo" class="text-gray-700 mb-4 hidden"></div>
                 <div id="conversionProgress" class="text-gray-700 mb-4 hidden">Converting... Please wait</div>
             </div>
             
+            <!-- 转换和下载按钮 -->
             <div class="text-center">
                 <button id="convertAudio" class="px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 mb-4 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>Convert Audio</button>
                 <button id="downloadAudio" class="px-6 py-3 bg-green-600 text-white rounded hover:bg-green-700 hidden">Download WAV File</button>
@@ -113,7 +115,7 @@
     </div>
 
     <script>
-        // Tab Switch Logic
+        // -------------------------- 通用选项卡切换逻辑 --------------------------
         const tabImage = document.getElementById('tabImage');
         const tabAudio = document.getElementById('tabAudio');
         const contentImage = document.getElementById('contentImage');
@@ -137,7 +139,7 @@
             tabImage.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
         });
 
-        // -------------------------- IMAGE EDITOR CODE (NO MODIFICATIONS) --------------------------
+        // -------------------------- 图片编辑逻辑（完全不变） --------------------------
         const canvas = document.getElementById('imageCanvas');
         const ctx = canvas.getContext('2d');
         const canvasContainer = document.getElementById('canvasContainer');
@@ -152,12 +154,14 @@
         let imageX = 0;
         let imageY = 0;
 
+        // 拖拽相关变量
         let isDragging = false;
         let dragStartX = 0;
         let dragStartY = 0;
         let imageStartX = 0;
         let imageStartY = 0;
 
+        // 初始化画布为白色
         function initCanvas() {
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -168,6 +172,7 @@
             isDragging = false;
         }
 
+        // 判断鼠标是否在图片范围内
         function isMouseOverImage(mouseX, mouseY) {
             if (!uploadedImage) return false;
             const scaledWidth = uploadedImage.width * currentScale;
@@ -180,6 +185,7 @@
             );
         }
 
+        // 获取鼠标在画布上的坐标（适配缩放）
         function getCanvasMousePos(e) {
             const rect = canvas.getBoundingClientRect();
             return {
@@ -188,6 +194,7 @@
             };
         }
 
+        // 处理上传的图片
         imageUpload.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file || !file.type.startsWith('image/')) return;
@@ -197,6 +204,7 @@
                 const img = new Image();
                 img.onload = () => {
                     uploadedImage = img;
+                    // 初始位置居中
                     imageX = (canvas.width - img.width) / 2;
                     imageY = (canvas.height - img.height) / 2;
                     drawImageOnCanvas();
@@ -206,7 +214,9 @@
             reader.readAsDataURL(file);
         });
 
+        // 绘制图片到画布
         function drawImageOnCanvas() {
+            // 清空画布（白底）
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
@@ -217,8 +227,10 @@
             }
         }
 
+        // -------------------------- 画布拖拽功能 --------------------------
         canvas.addEventListener('mousedown', (e) => {
             if (!uploadedImage) return;
+            
             const mousePos = getCanvasMousePos(e);
             if (isMouseOverImage(mousePos.x, mousePos.y)) {
                 isDragging = true;
@@ -232,6 +244,7 @@
 
         canvas.addEventListener('mousemove', (e) => {
             if (!isDragging || !uploadedImage) return;
+            
             const mousePos = getCanvasMousePos(e);
             const dx = mousePos.x - dragStartX;
             const dy = mousePos.y - dragStartY;
@@ -246,12 +259,15 @@
                 canvasContainer.classList.remove('grabbing');
             }
         }
+
         canvas.addEventListener('mouseup', endDrag);
         canvas.addEventListener('mouseleave', endDrag);
 
+        // -------------------------- 画布滚轮缩放功能 --------------------------
         canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
             if (!uploadedImage) return;
+
             const mousePos = getCanvasMousePos(e);
             const scaleDelta = e.deltaY > 0 ? -0.05 : 0.05;
             const newScale = Math.max(0.1, Math.min(5.0, currentScale + scaleDelta));
@@ -268,9 +284,11 @@
             const scalePercent = Math.round(currentScale * 100);
             scaleSlider.value = scalePercent;
             scaleValue.textContent = scalePercent;
+            
             drawImageOnCanvas();
         }, { passive: false });
 
+        // -------------------------- 滑块缩放控制 --------------------------
         scaleSlider.addEventListener('input', (e) => {
             const scalePercent = parseInt(e.target.value);
             currentScale = scalePercent / 100;
@@ -278,6 +296,7 @@
             drawImageOnCanvas();
         });
 
+        // 导出高质量JPG
         exportImage.addEventListener('click', () => {
             if (!uploadedImage) {
                 alert('Please upload an image first!');
@@ -293,7 +312,7 @@
         resetCanvas.addEventListener('click', initCanvas);
         initCanvas();
 
-        // -------------------------- AUDIO CONVERSION LOGIC --------------------------
+        // -------------------------- 音频转换逻辑（采样率降至22.05kHz） --------------------------
         const audioUpload = document.getElementById('audioUpload');
         const convertAudio = document.getElementById('convertAudio');
         const downloadAudio = document.getElementById('downloadAudio');
@@ -303,88 +322,89 @@
         let audioBuffer = null;
         let convertedWavBlob = null;
 
-        // Load audio file
+        // 处理音频文件选择
         audioUpload.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file || !file.type.startsWith('audio/')) return;
+
             audioInfo.textContent = `Selected file: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
             audioInfo.classList.remove('hidden');
             convertAudio.disabled = false;
+
             try {
                 const audioContext = new AudioContext();
                 const arrayBuffer = await file.arrayBuffer();
                 audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-            } catch (err) {
-                alert('Failed to decode audio file: ' + err.message);
+            } catch (error) {
+                alert('Failed to decode audio file: ' + error.message);
                 convertAudio.disabled = true;
             }
         });
 
+        // 转换音频（核心修改：采样率改为22.05kHz）
         convertAudio.addEventListener('click', async () => {
             if (!audioBuffer) return;
+
             conversionProgress.classList.remove('hidden');
             convertAudio.disabled = true;
+
             try {
-                const blob = await convertAudio(audioBuffer);
-                convertedWavBlob = blob;
+                const wavBlob = await convertAudioToWav(audioBuffer);
+                convertedWavBlob = wavBlob;
+
                 downloadAudio.classList.remove('hidden');
                 conversionProgress.classList.add('hidden');
-                alert('Audio conversion completed!');
-            } catch (err) {
+                alert('Audio conversion completed! File size reduced significantly.');
+            } catch (error) {
                 conversionProgress.classList.add('hidden');
-                alert('Convert failed: ' + err.message);
+                alert('Error converting audio: ' + error.message);
                 convertAudio.disabled = false;
             }
         });
 
+        // 下载转换后的WAV
         downloadAudio.addEventListener('click', () => {
             if (!convertedWavBlob) return;
-            saveAs(convertedWavBlob, 'audio-output-' + Date.now() + '.wav');
+            saveAs(convertedWavBlob, 'converted-audio-' + new Date().getTime() + '.wav');
         });
 
-        // Core convert function with user selected rate & channel
-        function convertAudio(originalBuffer) {
+        // 核心修改：转换为22.05kHz/44.1kHz 16位 WAV（可配置）
+        function convertAudioToWav(audioBuffer) {
             return new Promise((resolve, reject) => {
-                // Get user options
-                const targetSampleRate = parseInt(document.querySelector('input[name="sampleRateOpt"]:checked').value);
-                const channelMode = document.querySelector('input[name="channelOpt"]:checked').value;
-                const originalSampleRate = originalBuffer.sampleRate;
-                const originalCh = originalBuffer.numberOfChannels;
+                // 获取用户选择的采样率（默认22.05kHz）
+                const targetSampleRate = parseInt(document.querySelector('input[name="sampleRate"]:checked').value);
+                const originalSampleRate = audioBuffer.sampleRate;
+                // 获取用户选择的声道模式
+                const isMono = document.querySelector('input[name="audioChannel"]:checked').value === 'mono';
+                const targetChannels = isMono ? 1 : audioBuffer.numberOfChannels;
 
-                // Decide target channel count
-                let targetCh;
-                if (channelMode === 'mono') {
-                    targetCh = 1;
-                } else {
-                    targetCh = originalCh;
-                }
+                // 计算重采样后的样本数（适配22.05kHz）
+                const sampleRatio = targetSampleRate / originalSampleRate;
+                const newLength = Math.round(audioBuffer.length * sampleRatio);
 
-                // Calculate target sample length
-                const ratio = targetSampleRate / originalSampleRate;
-                const targetLength = Math.round(originalBuffer.length * ratio);
-
-                // Create offline context
-                const offlineCtx = new OfflineAudioContext({
-                    numberOfChannels: targetCh,
-                    length: targetLength,
+                // 创建离线音频上下文（使用22.05kHz采样率）
+                const offlineContext = new OfflineAudioContext({
+                    numberOfChannels: targetChannels,
+                    length: newLength,
                     sampleRate: targetSampleRate
                 });
 
-                // Preprocess buffer: stereo to mono if needed
-                let sourceBuffer = originalBuffer;
-                if (channelMode === 'mono' && originalCh > 1) {
-                    sourceBuffer = stereoToMono(originalBuffer);
+                // 立体声转单声道处理
+                let sourceBuffer = audioBuffer;
+                if (isMono && audioBuffer.numberOfChannels > 1) {
+                    sourceBuffer = convertStereoToMono(audioBuffer);
                 }
 
-                const src = offlineCtx.createBufferSource();
-                src.buffer = sourceBuffer;
-                src.connect(offlineCtx.destination);
-                src.start();
+                // 渲染重采样后的音频
+                const source = offlineContext.createBufferSource();
+                source.buffer = sourceBuffer;
+                source.connect(offlineContext.destination);
+                source.start();
 
-                offlineCtx.startRendering()
-                    .then(renderedBuf => {
-                        const interleaved = interleaveChannels(renderedBuf);
-                        const dataView = encodeWav(interleaved, targetSampleRate, targetCh);
+                offlineContext.startRendering()
+                    .then((renderedBuffer) => {
+                        const interleaved = interleaveChannels(renderedBuffer);
+                        const dataView = encodeWav(interleaved, targetSampleRate, targetChannels);
                         const wavBlob = new Blob([dataView], { type: 'audio/wav' });
                         resolve(wavBlob);
                     })
@@ -392,66 +412,75 @@
             });
         }
 
-        // Convert stereo buffer to mono average
-        function stereoToMono(buffer) {
-            const ctx = new AudioContext();
-            const monoBuf = ctx.createBuffer(1, buffer.length, buffer.sampleRate);
-            const monoData = monoBuf.getChannelData(0);
-            const left = buffer.getChannelData(0);
-            const right = buffer.getChannelData(1);
+        // 立体声转单声道（体积减半）
+        function convertStereoToMono(buffer) {
+            const audioContext = new AudioContext();
+            const monoBuffer = audioContext.createBuffer(1, buffer.length, buffer.sampleRate);
+            const monoData = monoBuffer.getChannelData(0);
+            const leftData = buffer.getChannelData(0);
+            const rightData = buffer.getChannelData(1);
+
+            // 左右声道平均（保证音质）
             for (let i = 0; i < buffer.length; i++) {
-                let val = (left[i] + right[i]) / 2;
-                monoData[i] = Math.max(-1, Math.min(1, val));
+                monoData[i] = (leftData[i] + rightData[i]) / 2;
+                // 限制幅值，避免失真
+                monoData[i] = Math.max(-1, Math.min(1, monoData[i]));
             }
-            return monoBuf;
+
+            return monoBuffer;
         }
 
-        // Interleave multi channel float samples
+        // 交织多通道数据
         function interleaveChannels(buffer) {
-            const ch = buffer.numberOfChannels;
-            const len = buffer.length;
-            const out = new Float32Array(len * ch);
-            let idx = 0;
-            for (let i = 0; i < len; i++) {
-                for (let c = 0; c < ch; c++) {
-                    out[idx++] = buffer.getChannelData(c)[i];
+            const numChannels = buffer.numberOfChannels;
+            const length = buffer.length;
+            const result = new Float32Array(length * numChannels);
+            
+            let index = 0;
+            for (let i = 0; i < length; i++) {
+                for (let channel = 0; channel < numChannels; channel++) {
+                    result[index++] = buffer.getChannelData(channel)[i];
                 }
             }
-            return out;
+            return result;
         }
 
-        // Encode float array to 16bit PCM WAV DataView
-        function encodeWav(samples, sampleRate, numCh) {
-            const bytePerSample = 2;
-            const dataByteLen = samples.length * bytePerSample;
-            const buf = new ArrayBuffer(44 + dataByteLen);
-            const view = new DataView(buf);
+        // 编码为16位WAV（适配22.05kHz采样率）
+        function encodeWav(samples, sampleRate, numChannels) {
+            const buffer = new ArrayBuffer(44 + samples.length * 2);
+            const view = new DataView(buffer);
 
-            writeStr(view, 0, 'RIFF');
-            view.setUint32(4, 36 + dataByteLen, true);
-            writeStr(view, 8, 'WAVE');
-            writeStr(view, 12, 'fmt ');
+            // WAV文件头（适配指定采样率）
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + samples.length * 2, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
             view.setUint32(16, 16, true);
             view.setUint16(20, 1, true);
-            view.setUint16(22, numCh, true);
-            view.setUint32(24, sampleRate, true);
-            view.setUint32(28, sampleRate * numCh * bytePerSample, true);
-            view.setUint16(32, numCh * bytePerSample, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true); // 使用用户选择的采样率
+            view.setUint32(28, sampleRate * numChannels * 2, true); // 字节率适配采样率
+            view.setUint16(32, numChannels * 2, true);
             view.setUint16(34, 16, true);
-            writeStr(view, 36, 'data');
-            view.setUint32(40, dataByteLen, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, samples.length * 2, true);
 
-            floatTo16PCM(view, 44, samples);
+            // Float32转16位PCM
+            floatTo16BitPCM(view, 44, samples);
+
             return view;
         }
 
-        function writeStr(view, offset, str) {
-            for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+        // 辅助函数
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
         }
 
-        function floatTo16PCM(output, offset, input) {
+        function floatTo16BitPCM(output, offset, input) {
             for (let i = 0; i < input.length; i++, offset += 2) {
-                let s = Math.max(-1, Math.min(1, input[i]));
+                const s = Math.max(-1, Math.min(1, input[i]));
                 output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
             }
         }
