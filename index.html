@@ -1,483 +1,429 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Media Toolkit - Image & Audio Converter</title>
+    <title>小羊的音乐相框综合工具 · 综合媒体工具箱</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/dist/lame.all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
         .canvas-container {
-            position: relative;
-            width: 240px;
-            height: 296px;
-            border: 1px solid #ddd;
-            margin: 20px auto;
-            cursor: grab;
+            position: relative; width: 296px; height: 240px; border: 1px solid #ddd;
+            margin: 20px auto; cursor: grab; background: white;
         }
-        .canvas-container.grabbing {
-            cursor: grabbing;
+        .canvas-container.grabbing { cursor: grabbing; }
+        #imageCanvas { background-color: white; }
+        .slider-container { max-width: 400px; margin: 20px auto; }
+        .image-item {
+            cursor: pointer; transition: all 0.2s; border: 2px solid transparent;
         }
-        #imageCanvas {
-            background-color: white;
+        .image-item:hover { border-color: #93c5fd; }
+        .image-item.active { border-color: #3b82f6; background: #eff6ff; }
+        .audio-item {
+            transition: all 0.2s; border: 1px solid #e5e7eb;
         }
-        .slider-container {
-            max-width: 400px;
-            margin: 20px auto;
+        .audio-item:hover { border-color: #93c5fd; }
+        .audio-item.completed { border-color: #86efac; background: #f0fdf4; }
+
+        #frameToolContainer {
+            --accent: #4f6ef7; --bg: #f0f2f5; --card-bg: #ffffff; --text: #1a1a2e;
+            --border: #e2e6ef; --shadow: 0 4px 20px rgba(0,0,0,0.08); --radius: 14px;
+            background: var(--bg); padding: 20px; border-radius: var(--radius);
         }
-        .audio-option {
-            margin: 10px 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+        #frameToolContainer .canvas-panels { display: flex; flex-direction: column; gap: 24px; }
+        #frameToolContainer .canvas-card {
+            background: var(--card-bg); border-radius: var(--radius); padding: 18px;
+            box-shadow: var(--shadow); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px;
         }
+        #frameToolContainer .card-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        #frameToolContainer .card-header .title { font-weight: 600; font-size: 1rem; color: var(--text); }
+        #frameToolContainer .canvas-wrapper {
+            position: relative; border-radius: 8px; overflow: hidden;
+            border: 2px solid #dde1ed; background: #fafafa; align-self: center;
+        }
+        #frameToolContainer canvas { display: block; max-width: 100%; height: auto; }
+        #frameToolContainer .btn {
+            padding: 7px 16px; border-radius: 20px; border: none; cursor: pointer;
+            font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 5px;
+            background: var(--accent); color: #fff; white-space: nowrap; transition: background 0.2s, transform 0.1s;
+        }
+        #frameToolContainer .btn:hover { background: #3b54d4; transform: translateY(-1px); }
+        #frameToolContainer .btn-outline { background: #fff; color: var(--accent); border: 2px solid var(--accent); }
+        #frameToolContainer .btn-outline:hover { background: #eef1ff; }
+        #frameToolContainer .btn-sm { padding: 6px 14px; font-size: 0.8rem; }
+        #frameToolContainer .badge {
+            display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 0.8rem;
+            font-weight: 600; background: #e8f5e9; color: #2e7d32;
+        }
+        #frameToolContainer .badge.warn { background: #fff3e0; color: #e65100; }
+        #frameToolContainer .upload-group { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        #frameToolContainer .subtitle-text { font-size: 0.85rem; color: var(--text-secondary, #5a5a7a); margin-top: -4px; }
+        #frameToolContainer .toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: #1a1a2e; color: #fff; padding: 14px 28px; border-radius: 30px;
+            z-index: 999; opacity: 0; transition: 0.3s; pointer-events: none; font-size: 0.95rem;
+        }
+        #frameToolContainer .toast.show { opacity: 1; }
+        .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
-    <div class="max-w-4xl mx-auto px-4 py-8">
-        <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">Media Toolkit</h1>
-        
-        <!-- 选项卡切换 -->
-        <div class="flex justify-center mb-6 border-b">
-            <button id="tabImage" class="tab-button px-6 py-3 font-medium text-blue-600 border-b-2 border-blue-600">Image Editor</button>
-            <button id="tabAudio" class="tab-button px-6 py-3 font-medium text-gray-500 hover:text-gray-700">Audio Converter</button>
-        </div>
+<body class="bg-gray-100 min-h-screen text-base">
+<div class="max-w-7xl mx-auto px-4 py-8">
+    <h1 class="text-4xl font-bold text-center text-gray-800 mb-4">🐑 小羊的音乐相框综合工具</h1>
+    <p class="text-center text-gray-500 text-lg mb-4">屏幕图片编辑 · 音乐文件编辑 · 相框照片和唱片图片定制</p>
+    <p class="text-center text-gray-400 text-sm mb-6">💡 导出的图片和音频请复制到内存卡中1-9文件夹内，分别对应1-9号的唱片，一个文件夹内至少需有一个图片和一个音频文件</p>
 
-        <!-- 图片编辑内容 -->
-        <div id="contentImage" class="tab-content active bg-white p-6 rounded-lg shadow-md">
-            <h2 class="text-xl font-semibold text-gray-700 mb-4">Image Editor (240×296 Canvas)</h2>
-            <p class="text-gray-600 mb-4 text-center">Upload an image, drag to move, scale with wheel/slider, export as high-quality JPG</p>
-            
-            <!-- 图片上传 -->
-            <div class="text-center mb-4">
-                <input type="file" id="imageUpload" accept="image/*" class="mb-4">
-                <button id="resetCanvas" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded mr-2">Reset Canvas</button>
-            </div>
-            
-            <!-- 画布容器 -->
-            <div class="canvas-container" id="canvasContainer">
-                <canvas id="imageCanvas" width="240" height="296"></canvas>
-            </div>
-            
-            <!-- 缩放滑块 -->
-            <div class="slider-container">
-                <label for="scaleSlider" class="block text-gray-700 mb-2">Image Scale: <span id="scaleValue">100</span>%</label>
-                <input type="range" id="scaleSlider" min="10" max="500" value="100" class="w-full">
-            </div>
-            
-            <!-- 导出按钮 -->
-            <div class="text-center mt-6">
-                <button id="exportImage" class="px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700">Export High-Quality JPG</button>
-            </div>
-        </div>
+    <div class="flex justify-center mb-6 border-b flex-wrap">
+        <button class="tab-button px-5 py-3 font-medium text-blue-600 border-b-2 border-blue-600 text-base" data-tab="0">🖼️ 屏幕图片编辑</button>
+        <button class="tab-button px-5 py-3 font-medium text-gray-500 hover:text-gray-700 text-base" data-tab="1">🎵 音乐文件编辑</button>
+        <button class="tab-button px-5 py-3 font-medium text-gray-500 hover:text-gray-700 text-base" data-tab="2">📷 相框照片和唱片图片定制</button>
+    </div>
 
-        <!-- 音频转换内容（新增体积优化选项） -->
-        <div id="contentAudio" class="tab-content bg-white p-6 rounded-lg shadow-md">
-            <h2 class="text-xl font-semibold text-gray-700 mb-4">Audio Converter (to 44.1kHz 16-bit WAV)</h2>
-            <p class="text-gray-600 mb-4 text-center">Upload any audio file (MP3, WAV, etc.) and convert to 44.1kHz 16-bit WAV</p>
-            
-            <!-- 音频体积优化选项 -->
-            <div class="audio-option">
-                <input type="radio" id="mono" name="audioChannel" value="mono" checked>
-                <label for="mono">Mono (Smaller File, 50% Size)</label>
-                <input type="radio" id="stereo" name="audioChannel" value="stereo" style="margin-left: 16px;">
-                <label for="stereo">Stereo (Original Quality)</label>
+    <!-- 选项卡0：屏幕图片编辑 -->
+    <div class="tab-content active bg-white p-6 rounded-lg shadow-md" data-content="0">
+        <h2 class="text-2xl font-semibold text-gray-700 mb-2">屏幕图片编辑（296×240 横屏编辑与导出）</h2>
+        <p class="text-gray-600 mb-2 text-center text-base">左侧上传准备好的图片，列表可选择每一张图片进行调整其在屏幕显示的大小和位置，导出后复制到内存卡中1-9文件夹即可</p>
+        <p class="text-center text-orange-500 text-sm mb-4">⚠️ 提醒：导出的图片不能用中文命名，不然播放不了，导出文件系统自动将按序号命名（如 picture-1.jpg）</p>
+        <div class="flex flex-col lg:flex-row gap-6">
+            <div class="lg:w-64 flex-shrink-0">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="font-medium text-gray-700 text-base">图片列表</span>
+                    <div class="flex gap-2">
+                        <input type="file" id="imageUploadBatch" accept="image/*" multiple class="hidden">
+                        <button id="btnAddImages" class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">添加图片</button>
+                        <button id="btnClearImages" class="px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300">清空</button>
+                    </div>
+                </div>
+                <div id="imageList" class="space-y-2 max-h-96 overflow-y-auto scrollbar-thin border border-gray-200 rounded-lg p-2 bg-gray-50">
+                    <p id="imageListEmpty" class="text-gray-400 text-base text-center py-8">暂无图片，请添加</p>
+                </div>
+                <button id="btnExportAll" class="w-full mt-3 px-4 py-3 bg-green-600 text-white text-base rounded hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed" disabled>批量导出全部图片</button>
             </div>
-            
-            <!-- 音频上传 -->
-            <div class="text-center mb-6">
-                <input type="file" id="audioUpload" accept="audio/*" class="mb-4">
-                <div id="audioInfo" class="text-gray-700 mb-4 hidden"></div>
-                <div id="conversionProgress" class="text-gray-700 mb-4 hidden">Converting... Please wait</div>
-            </div>
-            
-            <!-- 转换和下载按钮 -->
-            <div class="text-center">
-                <button id="convertAudio" class="px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 mb-4 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>Convert Audio</button>
-                <button id="downloadAudio" class="px-6 py-3 bg-green-600 text-white rounded hover:bg-green-700 hidden">Download WAV File</button>
+            <div class="flex-1">
+                <div id="editorArea" class="text-center">
+                    <p id="noImageHint" class="text-gray-400 text-base py-12">请从左侧选择一张图片进行编辑</p>
+                    <div id="editorContent" class="hidden">
+                        <div class="canvas-container" id="canvasContainer">
+                            <canvas id="imageCanvas" width="296" height="240"></canvas>
+                        </div>
+                        <div class="slider-container">
+                            <label for="scaleSlider" class="block text-gray-700 text-base mb-2">图片缩放：<span id="scaleValue">100</span>%</label>
+                            <input type="range" id="scaleSlider" min="10" max="500" value="100" class="w-full">
+                        </div>
+                        <div class="flex justify-center gap-3">
+                            <button id="resetCurrentCanvas" class="px-5 py-2 bg-gray-200 hover:bg-gray-300 rounded text-base">重置位置</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <script>
-        // -------------------------- 通用选项卡切换逻辑 --------------------------
-        const tabImage = document.getElementById('tabImage');
-        const tabAudio = document.getElementById('tabAudio');
-        const contentImage = document.getElementById('contentImage');
-        const contentAudio = document.getElementById('contentAudio');
+    <!-- 选项卡1：音乐文件编辑 -->
+    <div class="tab-content bg-white p-6 rounded-lg shadow-md" data-content="1">
+        <h2 class="text-2xl font-semibold text-gray-700 mb-4">音乐文件编辑（输出 44.1kHz 16位高质量WAV）</h2>
+        <p class="text-gray-600 mb-2 text-center text-base">上传准备好的音乐文件（MP3，WAV，录音等），批量转换高质量WAV音频文件，下载后复制到内存卡对应1-9文件夹即可</p>
+        <p class="text-center text-orange-500 text-sm mb-4">⚠️ 提醒：导出的音频不能用中文命名，不然播放不了，导出文件系统将按序号命名（如 music-1.wav）</p>
+        <input type="hidden" id="audioChannelMono" value="mono">
+        <div class="flex flex-col lg:flex-row gap-6">
+            <div class="lg:w-72 flex-shrink-0">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="font-medium text-gray-700 text-base">音频文件列表</span>
+                    <div class="flex gap-2">
+                        <input type="file" id="audioUploadBatch" accept="audio/*" multiple class="hidden">
+                        <button id="btnAddAudios" class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">添加文件</button>
+                        <button id="btnClearAudios" class="px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300">清空</button>
+                    </div>
+                </div>
+                <div id="audioList" class="space-y-2 max-h-80 overflow-y-auto scrollbar-thin border border-gray-200 rounded-lg p-2 bg-gray-50">
+                    <p id="audioListEmpty" class="text-gray-400 text-base text-center py-8">暂无音频文件，请添加</p>
+                </div>
+                <button id="btnConvertAll" class="w-full mt-3 px-4 py-3 bg-green-600 text-white text-base rounded hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed" disabled>批量转换并下载全部</button>
+                <div id="conversionProgress" class="text-center text-gray-600 text-base mt-3 hidden">正在转换，请稍候...</div>
+            </div>
+            <div class="flex-1 flex items-center justify-center">
+                <div class="text-center text-gray-500 text-base">
+                    <p class="text-xl mb-2">📁 支持批量上传</p>
+                    <p class="text-base">支持 MP3、WAV、录音等格式</p>
+                    <p class="text-base">转换为 44.1kHz 16位高质量WAV</p>
+                    <p class="text-base mt-2 text-gray-400">转换完成后将自动逐个下载</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        tabImage.addEventListener('click', () => {
-            contentImage.classList.add('active');
-            contentAudio.classList.remove('active');
-            tabImage.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
-            tabImage.classList.remove('text-gray-500');
-            tabAudio.classList.add('text-gray-500');
-            tabAudio.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
+    <!-- 选项卡2：相框照片和唱片图片定制（含黑胶唱片） -->
+    <div class="tab-content" data-content="2">
+        <div id="frameToolContainer">
+            <div class="canvas-panels">
+                <div class="canvas-card">
+                    <div class="card-header"><span class="title text-lg">📋 相框内正面图 · 248×200mm 蒙版</span>
+                        <div class="upload-group">
+                            <input type="file" id="uploadA" accept="image/*" multiple style="display:none;">
+                            <button class="btn btn-sm" id="btnUploadA">📤 添加图片</button>
+                            <button class="btn btn-outline btn-sm" id="btnDeleteA">🗑️ 删除</button>
+                        </div>
+                    </div>
+                    <div class="canvas-wrapper" id="wrapperA"><canvas id="canvasA"></canvas></div>
+                </div>
+                <div class="canvas-card">
+                    <div class="card-header"><span class="title text-lg">📋 相框背面图 · 248×200mm 蒙版</span>
+                        <div class="upload-group">
+                            <input type="file" id="uploadB" accept="image/*" multiple style="display:none;">
+                            <button class="btn btn-sm" id="btnUploadB">📤 添加图片</button>
+                            <button class="btn btn-outline btn-sm" id="btnDeleteB">🗑️ 删除</button>
+                        </div>
+                    </div>
+                    <div class="canvas-wrapper" id="wrapperB"><canvas id="canvasB"></canvas></div>
+                </div>
+                <div class="canvas-card">
+                    <div class="card-header">
+                        <span class="title text-lg">📋 相框内侧边图 · 两条竖向80×195mm蒙版</span>
+                        <div class="upload-group">
+                            <input type="file" id="uploadC_left" accept="image/*" multiple style="display:none;">
+                            <input type="file" id="uploadC_right" accept="image/*" multiple style="display:none;">
+                            <button class="btn btn-sm" id="btnUploadCLeft">⬅️ 左蒙版</button>
+                            <button class="btn btn-sm" id="btnUploadCRight">➡️ 右蒙版</button>
+                            <button class="btn btn-outline btn-sm" id="btnDeleteC">🗑️ 删除选中</button>
+                        </div>
+                    </div>
+                    <div class="canvas-wrapper" id="wrapperC"><canvas id="canvasC"></canvas></div>
+                </div>
+                <div class="canvas-card">
+                    <span class="title text-lg" style="align-self:flex-start;">🔵 黑胶唱片定制</span>
+                    <p class="subtitle-text">可定制24张黑胶唱片</p>
+                    <div class="canvas-wrapper" id="wrapper2"><canvas id="canvas2"></canvas></div>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;align-items:center; margin-top:12px;">
+                        <span class="badge text-base" id="badgeFilled">已填充: 0/24</span>
+                        <button class="btn btn-outline btn-sm" id="btnReplaceCircle" disabled>🖼️ 替换选中</button>
+                        <button class="btn btn-outline btn-sm" id="btnClearAll2">🗑️ 清除全部</button>
+                    </div>
+                    <div style="font-size:0.85rem;color:var(--text-secondary,#5a5a7a);text-align:center; margin-top:6px;">
+                        🖱️ 单击圆形拖拽移动 · 双击替换 · 空圆形单击上传
+                    </div>
+                    <input type="file" id="hiddenFileInput2" accept="image/*" style="display:none;">
+                </div>
+            </div>
+            <div class="text-center mt-6">
+                <button id="btnExportPDF" class="px-8 py-4 bg-green-600 text-white rounded hover:bg-green-700 text-xl font-semibold">📄 导出A4高清PDF（四页）</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+    // ==================== 通用选项卡切换 ====================
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabIndex = btn.getAttribute('data-tab');
+            tabButtons.forEach(b => { b.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600'); b.classList.add('text-gray-500'); });
+            btn.classList.add('text-blue-600', 'border-b-2', 'border-blue-600'); btn.classList.remove('text-gray-500');
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+                if (content.getAttribute('data-content') === tabIndex) content.classList.add('active');
+            });
+            if (tabIndex === '2' && !window.vinylReady) initVinylCanvas();
         });
+    });
 
-        tabAudio.addEventListener('click', () => {
-            contentAudio.classList.add('active');
-            contentImage.classList.remove('active');
-            tabAudio.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
-            tabAudio.classList.remove('text-gray-500');
-            tabImage.classList.add('text-gray-500');
-            tabImage.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
-        });
+    const toastEl = document.getElementById('toast');
+    function showToast(msg) { toastEl.textContent = msg; toastEl.classList.add('show'); setTimeout(() => toastEl.classList.remove('show'), 1500); }
 
-        // -------------------------- 图片编辑逻辑（完全不变） --------------------------
-        const canvas = document.getElementById('imageCanvas');
-        const ctx = canvas.getContext('2d');
-        const canvasContainer = document.getElementById('canvasContainer');
-        const imageUpload = document.getElementById('imageUpload');
-        const scaleSlider = document.getElementById('scaleSlider');
-        const scaleValue = document.getElementById('scaleValue');
-        const exportImage = document.getElementById('exportImage');
-        const resetCanvas = document.getElementById('resetCanvas');
+    // ==================== 功能一：屏幕图片编辑 ====================
+    const canvas = document.getElementById('imageCanvas');
+    const ctx = canvas.getContext('2d');
+    const canvasContainer = document.getElementById('canvasContainer');
+    const scaleSlider = document.getElementById('scaleSlider');
+    const scaleValue = document.getElementById('scaleValue');
+    const imageList = document.getElementById('imageList');
+    const imageListEmpty = document.getElementById('imageListEmpty');
+    const noImageHint = document.getElementById('noImageHint');
+    const editorContent = document.getElementById('editorContent');
+    const btnExportAll = document.getElementById('btnExportAll');
+    let imageEntries = [];
+    let currentEditId = null;
+    let isDragging = false, dragStartX, dragStartY, imageStartX, imageStartY;
 
-        let uploadedImage = null;
-        let currentScale = 1.0;
-        let imageX = 0;
-        let imageY = 0;
-
-        // 拖拽相关变量
-        let isDragging = false;
-        let dragStartX = 0;
-        let dragStartY = 0;
-        let imageStartX = 0;
-        let imageStartY = 0;
-
-        // 初始化画布为白色
-        function initCanvas() {
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            uploadedImage = null;
-            scaleSlider.value = 100;
-            currentScale = 1.0;
-            scaleValue.textContent = '100';
-            isDragging = false;
-        }
-
-        // 判断鼠标是否在图片范围内
-        function isMouseOverImage(mouseX, mouseY) {
-            if (!uploadedImage) return false;
-            const scaledWidth = uploadedImage.width * currentScale;
-            const scaledHeight = uploadedImage.height * currentScale;
-            return (
-                mouseX >= imageX &&
-                mouseX <= imageX + scaledWidth &&
-                mouseY >= imageY &&
-                mouseY <= imageY + scaledHeight
-            );
-        }
-
-        // 获取鼠标在画布上的坐标（适配缩放）
-        function getCanvasMousePos(e) {
-            const rect = canvas.getBoundingClientRect();
-            return {
-                x: (e.clientX - rect.left) * (canvas.width / rect.width),
-                y: (e.clientY - rect.top) * (canvas.height / rect.height)
-            };
-        }
-
-        // 处理上传的图片
-        imageUpload.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file || !file.type.startsWith('image/')) return;
-
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const img = new Image();
-                img.onload = () => {
-                    uploadedImage = img;
-                    // 初始位置居中
-                    imageX = (canvas.width - img.width) / 2;
-                    imageY = (canvas.height - img.height) / 2;
-                    drawImageOnCanvas();
-                };
-                img.src = event.target.result;
-            };
-            reader.readAsDataURL(file);
-        });
-
-        // 绘制图片到画布
-        function drawImageOnCanvas() {
-            // 清空画布（白底）
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            if (uploadedImage) {
-                const scaledWidth = uploadedImage.width * currentScale;
-                const scaledHeight = uploadedImage.height * currentScale;
-                ctx.drawImage(uploadedImage, imageX, imageY, scaledWidth, scaledHeight);
-            }
-        }
-
-        // -------------------------- 画布拖拽功能 --------------------------
-        canvas.addEventListener('mousedown', (e) => {
-            if (!uploadedImage) return;
-            
-            const mousePos = getCanvasMousePos(e);
-            if (isMouseOverImage(mousePos.x, mousePos.y)) {
-                isDragging = true;
-                canvasContainer.classList.add('grabbing');
-                dragStartX = mousePos.x;
-                dragStartY = mousePos.y;
-                imageStartX = imageX;
-                imageStartY = imageY;
-            }
-        });
-
-        canvas.addEventListener('mousemove', (e) => {
-            if (!isDragging || !uploadedImage) return;
-            
-            const mousePos = getCanvasMousePos(e);
-            const dx = mousePos.x - dragStartX;
-            const dy = mousePos.y - dragStartY;
-            imageX = imageStartX + dx;
-            imageY = imageStartY + dy;
-            drawImageOnCanvas();
-        });
-
-        function endDrag() {
-            if (isDragging) {
-                isDragging = false;
-                canvasContainer.classList.remove('grabbing');
-            }
-        }
-
-        canvas.addEventListener('mouseup', endDrag);
-        canvas.addEventListener('mouseleave', endDrag);
-
-        // -------------------------- 画布滚轮缩放功能 --------------------------
-        canvas.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            if (!uploadedImage) return;
-
-            const mousePos = getCanvasMousePos(e);
-            const scaleDelta = e.deltaY > 0 ? -0.05 : 0.05;
-            const newScale = Math.max(0.1, Math.min(5.0, currentScale + scaleDelta));
-            
-            const scaledWidth = uploadedImage.width * currentScale;
-            const scaledHeight = uploadedImage.height * currentScale;
-            const mouseXInImage = mousePos.x - imageX;
-            const mouseYInImage = mousePos.y - imageY;
-            
-            imageX = mousePos.x - (mouseXInImage * newScale / currentScale);
-            imageY = mousePos.y - (mouseYInImage * newScale / currentScale);
-            
-            currentScale = newScale;
-            const scalePercent = Math.round(currentScale * 100);
-            scaleSlider.value = scalePercent;
-            scaleValue.textContent = scalePercent;
-            
-            drawImageOnCanvas();
-        }, { passive: false });
-
-        // -------------------------- 滑块缩放控制 --------------------------
-        scaleSlider.addEventListener('input', (e) => {
-            const scalePercent = parseInt(e.target.value);
-            currentScale = scalePercent / 100;
-            scaleValue.textContent = scalePercent;
-            drawImageOnCanvas();
-        });
-
-        // 导出高质量JPG
-        exportImage.addEventListener('click', () => {
-            if (!uploadedImage) {
-                alert('Please upload an image first!');
-                return;
-            }
-            const dataURL = canvas.toDataURL('image/jpeg', 1.0);
-            const link = document.createElement('a');
-            link.download = 'canvas-image-' + new Date().getTime() + '.jpg';
-            link.href = dataURL;
-            link.click();
-        });
-
-        resetCanvas.addEventListener('click', initCanvas);
-        initCanvas();
-
-        // -------------------------- 音频转换逻辑（体积优化版） --------------------------
-        const audioUpload = document.getElementById('audioUpload');
-        const convertAudio = document.getElementById('convertAudio');
-        const downloadAudio = document.getElementById('downloadAudio');
-        const audioInfo = document.getElementById('audioInfo');
-        const conversionProgress = document.getElementById('conversionProgress');
-        const monoRadio = document.getElementById('mono');
-        const stereoRadio = document.getElementById('stereo');
-
-        let audioBuffer = null;
-        let convertedWavBlob = null;
-
-        // 处理音频文件选择
-        audioUpload.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file || !file.type.startsWith('audio/')) return;
-
-            audioInfo.textContent = `Selected file: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
-            audioInfo.classList.remove('hidden');
-            convertAudio.disabled = false;
-
-            try {
-                const audioContext = new AudioContext();
-                const arrayBuffer = await file.arrayBuffer();
-                audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-            } catch (error) {
-                alert('Failed to decode audio file: ' + error.message);
-                convertAudio.disabled = true;
-            }
-        });
-
-        // 转换音频（核心优化：立体声转单声道）
-        convertAudio.addEventListener('click', async () => {
-            if (!audioBuffer) return;
-
-            conversionProgress.classList.remove('hidden');
-            convertAudio.disabled = true;
-
-            try {
-                const wavBlob = await convertAudioToWav(audioBuffer);
-                convertedWavBlob = wavBlob;
-
-                downloadAudio.classList.remove('hidden');
-                conversionProgress.classList.add('hidden');
-                alert('Audio conversion completed! File size optimized.');
-            } catch (error) {
-                conversionProgress.classList.add('hidden');
-                alert('Error converting audio: ' + error.message);
-                convertAudio.disabled = false;
-            }
-        });
-
-        // 下载转换后的WAV
-        downloadAudio.addEventListener('click', () => {
-            if (!convertedWavBlob) return;
-            saveAs(convertedWavBlob, 'converted-audio-' + new Date().getTime() + '.wav');
-        });
-
-        // 核心优化：转换+体积压缩（立体声转单声道）
-        function convertAudioToWav(audioBuffer) {
-            return new Promise((resolve, reject) => {
-                const targetSampleRate = 44100;
-                const originalSampleRate = audioBuffer.sampleRate;
-                // 获取用户选择的声道模式（默认单声道）
-                const isMono = document.querySelector('input[name="audioChannel"]:checked').value === 'mono';
-                const targetChannels = isMono ? 1 : audioBuffer.numberOfChannels;
-
-                // 计算重采样后的样本数
-                const sampleRatio = targetSampleRate / originalSampleRate;
-                const newLength = Math.round(audioBuffer.length * sampleRatio);
-
-                // 创建离线音频上下文
-                const offlineContext = new OfflineAudioContext({
-                    numberOfChannels: targetChannels,
-                    length: newLength,
-                    sampleRate: targetSampleRate
-                });
-
-                // 立体声转单声道处理
-                let sourceBuffer = audioBuffer;
-                if (isMono && audioBuffer.numberOfChannels > 1) {
-                    sourceBuffer = convertStereoToMono(audioBuffer);
-                }
-
-                // 渲染重采样后的音频
-                const source = offlineContext.createBufferSource();
-                source.buffer = sourceBuffer;
-                source.connect(offlineContext.destination);
-                source.start();
-
-                offlineContext.startRendering()
-                    .then((renderedBuffer) => {
-                        const interleaved = interleaveChannels(renderedBuffer);
-                        const dataView = encodeWav(interleaved, targetSampleRate, targetChannels);
-                        const wavBlob = new Blob([dataView], { type: 'audio/wav' });
-                        resolve(wavBlob);
-                    })
-                    .catch(reject);
+    function getCurrentEntry() { return currentEditId ? imageEntries.find(e => e.id === currentEditId) : null; }
+    function getCanvasMousePos(e) { const rect = canvas.getBoundingClientRect(); return { x: (e.clientX - rect.left) * (canvas.width / rect.width), y: (e.clientY - rect.top) * (canvas.height / rect.height) }; }
+    function isMouseOverImage(mx, my, entry) { if (!entry) return false; const w = entry.img.width * entry.scale, h = entry.img.height * entry.scale; return mx >= entry.x && mx <= entry.x + w && my >= entry.y && my <= entry.y + h; }
+    function drawCanvas(entry) { ctx.fillStyle = 'white'; ctx.fillRect(0, 0, canvas.width, canvas.height); if (entry && entry.img) { const w = entry.img.width * entry.scale, h = entry.img.height * entry.scale; ctx.drawImage(entry.img, entry.x, entry.y, w, h); } }
+    function updateScaleUI(entry) { if (!entry) return; scaleSlider.value = Math.round(entry.scale * 100); scaleValue.textContent = Math.round(entry.scale * 100); }
+    function refreshImageList() {
+        imageList.innerHTML = '';
+        if (imageEntries.length === 0) { imageList.appendChild(imageListEmpty); imageListEmpty.classList.remove('hidden'); btnExportAll.disabled = true; }
+        else { imageListEmpty.classList.add('hidden'); btnExportAll.disabled = false;
+            imageEntries.forEach(entry => {
+                const div = document.createElement('div'); div.className = 'image-item flex items-center gap-3 p-3 rounded-lg text-base ' + (entry.id === currentEditId ? 'active' : '');
+                div.innerHTML = `<div class="w-12 h-12 bg-gray-200 rounded flex-shrink-0 overflow-hidden flex items-center justify-center"><img src="${entry.img.src}" class="w-full h-full object-cover" alt=""></div><span class="text-base truncate flex-1">${entry.name}</span><button class="delete-entry text-red-400 hover:text-red-600 text-xl leading-none" data-id="${entry.id}">&times;</button>`;
+                div.addEventListener('click', (e) => { if (e.target.classList.contains('delete-entry')) return; selectImage(entry.id); });
+                div.querySelector('.delete-entry').addEventListener('click', (e) => { e.stopPropagation(); deleteImageEntry(entry.id); });
+                imageList.appendChild(div);
             });
         }
+    }
+    function selectImage(id) { saveCurrentState(); currentEditId = id; const entry = getCurrentEntry(); if (entry) { noImageHint.classList.add('hidden'); editorContent.classList.remove('hidden'); updateScaleUI(entry); drawCanvas(entry); } refreshImageList(); }
+    function saveCurrentState() { if (!currentEditId) return; const entry = imageEntries.find(e => e.id === currentEditId); if (entry) entry.scale = parseFloat(scaleSlider.value) / 100; }
+    function deleteImageEntry(id) {
+        const idx = imageEntries.findIndex(e => e.id === id); if (idx >= 0) { imageEntries.splice(idx, 1); if (currentEditId === id) { currentEditId = imageEntries.length ? imageEntries[0].id : null; } }
+        const entry = getCurrentEntry(); if (entry) { noImageHint.classList.add('hidden'); editorContent.classList.remove('hidden'); updateScaleUI(entry); drawCanvas(entry); } else { noImageHint.classList.remove('hidden'); editorContent.classList.add('hidden'); ctx.fillStyle='white'; ctx.fillRect(0,0,canvas.width,canvas.height); }
+        refreshImageList();
+    }
+    function addImages(files) {
+        Array.from(files).forEach(file => { if (!file.type.startsWith('image/')) return; const reader = new FileReader(); reader.onload = (event) => { const img = new Image(); img.onload = () => { const id = Date.now() + Math.random(); const entry = { id, img, scale: 1.0, x: (canvas.width - img.width)/2, y: (canvas.height - img.height)/2, name: file.name }; imageEntries.push(entry); if (!currentEditId) { currentEditId = id; noImageHint.classList.add('hidden'); editorContent.classList.remove('hidden'); updateScaleUI(entry); drawCanvas(entry); } refreshImageList(); }; img.src = event.target.result; }; reader.readAsDataURL(file); });
+    }
+    document.getElementById('btnAddImages').addEventListener('click', () => document.getElementById('imageUploadBatch').click());
+    document.getElementById('imageUploadBatch').addEventListener('change', function(e) { if (e.target.files.length) { addImages(e.target.files); e.target.value = ''; } });
+    document.getElementById('btnClearImages').addEventListener('click', () => { imageEntries = []; currentEditId = null; noImageHint.classList.remove('hidden'); editorContent.classList.add('hidden'); ctx.fillStyle = 'white'; ctx.fillRect(0,0,canvas.width,canvas.height); refreshImageList(); });
+    canvas.addEventListener('mousedown', (e) => { const entry = getCurrentEntry(); if (!entry) return; const pos = getCanvasMousePos(e); if (isMouseOverImage(pos.x, pos.y, entry)) { isDragging = true; canvasContainer.classList.add('grabbing'); dragStartX = pos.x; dragStartY = pos.y; imageStartX = entry.x; imageStartY = entry.y; } });
+    canvas.addEventListener('mousemove', (e) => { if (!isDragging) return; const entry = getCurrentEntry(); if (!entry) return; const pos = getCanvasMousePos(e); entry.x = imageStartX + pos.x - dragStartX; entry.y = imageStartY + pos.y - dragStartY; drawCanvas(entry); });
+    function endDrag() { if (isDragging) { isDragging = false; canvasContainer.classList.remove('grabbing'); } }
+    canvas.addEventListener('mouseup', endDrag); canvas.addEventListener('mouseleave', endDrag);
+    canvas.addEventListener('wheel', (e) => { e.preventDefault(); const entry = getCurrentEntry(); if (!entry) return; const pos = getCanvasMousePos(e); const delta = e.deltaY > 0 ? -0.05 : 0.05; const newScale = Math.max(0.1, Math.min(5.0, entry.scale + delta)); const mx = pos.x - entry.x; const my = pos.y - entry.y; entry.x = pos.x - mx * newScale / entry.scale; entry.y = pos.y - my * newScale / entry.scale; entry.scale = newScale; updateScaleUI(entry); drawCanvas(entry); }, { passive: false });
+    scaleSlider.addEventListener('input', () => { const entry = getCurrentEntry(); if (!entry) return; entry.scale = parseInt(scaleSlider.value) / 100; scaleValue.textContent = Math.round(entry.scale * 100); drawCanvas(entry); });
+    document.getElementById('resetCurrentCanvas').addEventListener('click', () => { const entry = getCurrentEntry(); if (!entry) return; entry.scale = 1.0; entry.x = (canvas.width - entry.img.width)/2; entry.y = (canvas.height - entry.img.height)/2; updateScaleUI(entry); drawCanvas(entry); });
 
-        // 关键优化：立体声转单声道（体积减半）
-        function convertStereoToMono(buffer) {
-            const audioContext = new AudioContext();
-            const monoBuffer = audioContext.createBuffer(1, buffer.length, buffer.sampleRate);
-            const monoData = monoBuffer.getChannelData(0);
-            const leftData = buffer.getChannelData(0);
-            const rightData = buffer.getChannelData(1);
-
-            // 左右声道平均（保证音质）
-            for (let i = 0; i < buffer.length; i++) {
-                monoData[i] = (leftData[i] + rightData[i]) / 2;
-                // 限制幅值，避免失真
-                monoData[i] = Math.max(-1, Math.min(1, monoData[i]));
-            }
-
-            return monoBuffer;
+    function exportEntryToCanvas(entry) {
+        const w = 296, h = 240;
+        const tmp = document.createElement('canvas');
+        tmp.width = w; tmp.height = h;
+        const tctx = tmp.getContext('2d');
+        tctx.fillStyle = 'white';
+        tctx.fillRect(0, 0, w, h);
+        if (entry && entry.img) {
+            const imgW = entry.img.width * entry.scale;
+            const imgH = entry.img.height * entry.scale;
+            tctx.drawImage(entry.img, entry.x, entry.y, imgW, imgH);
         }
+        return tmp;
+    }
 
-        // 交织多通道数据
-        function interleaveChannels(buffer) {
-            const numChannels = buffer.numberOfChannels;
-            const length = buffer.length;
-            const result = new Float32Array(length * numChannels);
-            
-            let index = 0;
-            for (let i = 0; i < length; i++) {
-                for (let channel = 0; channel < numChannels; channel++) {
-                    result[index++] = buffer.getChannelData(channel)[i];
-                }
-            }
-            return result;
+    btnExportAll.addEventListener('click', () => {
+        saveCurrentState();
+        if (!imageEntries.length) { showToast('没有图片'); return; }
+        imageEntries.forEach((entry, idx) => {
+            setTimeout(() => {
+                const tmp = exportEntryToCanvas(entry);
+                const link = document.createElement('a');
+                link.download = 'picture-' + (idx + 1) + '.jpg';
+                link.href = tmp.toDataURL('image/jpeg', 1.0);
+                link.click();
+            }, idx * 300);
+        });
+        showToast('✅ 正在批量导出 ' + imageEntries.length + ' 张图片...');
+    });
+
+    ctx.fillStyle = 'white'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // ==================== 功能二：音乐文件编辑 ====================
+    const audioList = document.getElementById('audioList'); const audioListEmpty = document.getElementById('audioListEmpty');
+    const btnConvertAll = document.getElementById('btnConvertAll'); const conversionProgress = document.getElementById('conversionProgress');
+    let audioEntries = [];
+    function refreshAudioList() {
+        audioList.innerHTML = '';
+        if (audioEntries.length === 0) { audioList.appendChild(audioListEmpty); audioListEmpty.classList.remove('hidden'); btnConvertAll.disabled = true; }
+        else { audioListEmpty.classList.add('hidden'); btnConvertAll.disabled = false;
+            audioEntries.forEach(entry => { const div = document.createElement('div'); div.className = 'audio-item flex items-center justify-between p-3 rounded-lg text-base '+(entry.converted?'completed':'');
+                div.innerHTML = `<div class="flex items-center gap-2 flex-1 min-w-0"><span class="text-base truncate">${entry.name}</span><span class="text-sm text-gray-400 flex-shrink-0">(${(entry.file.size/1024/1024).toFixed(2)} MB)</span>${entry.converted?'<span class="text-sm text-green-600 flex-shrink-0">✅ 已转换</span>':''}</div><button class="delete-audio text-red-400 hover:text-red-600 text-xl leading-none flex-shrink-0 ml-2" data-id="${entry.id}">&times;</button>`;
+                div.querySelector('.delete-audio').addEventListener('click', (e) => { e.stopPropagation(); const idx = audioEntries.findIndex(a=>a.id===entry.id); if(idx>=0) audioEntries.splice(idx,1); refreshAudioList(); });
+                audioList.appendChild(div);
+            });
         }
+    }
+    document.getElementById('btnAddAudios').addEventListener('click', () => document.getElementById('audioUploadBatch').click());
+    document.getElementById('audioUploadBatch').addEventListener('change', function(e) { if(e.target.files.length) { Array.from(e.target.files).forEach(file => { if(!file.type.startsWith('audio/') && !file.name.match(/\.(mp3|wav|m4a|ogg|flac|aac|wma)$/i)) return; const id = Date.now()+Math.random(); audioEntries.push({id, file, name:file.name, buffer:null, converted:false, blob:null}); }); refreshAudioList(); e.target.value=''; } });
+    document.getElementById('btnClearAudios').addEventListener('click', () => { audioEntries = []; refreshAudioList(); });
+    btnConvertAll.addEventListener('click', async () => { if (!audioEntries.length) return; conversionProgress.classList.remove('hidden'); btnConvertAll.disabled = true; for (let entry of audioEntries) { if (entry.converted) continue; try { const actx = new AudioContext(); const ab = await entry.file.arrayBuffer(); const audioBuf = await actx.decodeAudioData(ab); const wavBlob = await convertAudioToWav(audioBuf); entry.blob = wavBlob; entry.converted = true; refreshAudioList(); } catch(err) { console.error(err); } } conversionProgress.classList.add('hidden'); btnConvertAll.disabled = false; const converted = audioEntries.filter(e=>e.converted&&e.blob); if(!converted.length) { showToast('⚠️ 转换失败'); return; } showToast('✅ 正在下载...'); converted.forEach((entry, idx) => setTimeout(() => { saveAs(entry.blob, 'music-' + (idx + 1) + '.wav'); }, idx * 400)); setTimeout(() => { audioEntries = []; refreshAudioList(); }, converted.length * 400 + 500); });
+    function convertAudioToWav(audioBuffer) { return new Promise((resolve, reject) => { const targetSampleRate = 44100; const targetChannels = 1; const sr = targetSampleRate / audioBuffer.sampleRate; const nl = Math.round(audioBuffer.length * sr); const off = new OfflineAudioContext({ numberOfChannels: targetChannels, length: nl, sampleRate: targetSampleRate }); let sb = audioBuffer; if(audioBuffer.numberOfChannels > 1) sb = convertStereoToMono(audioBuffer); const src = off.createBufferSource(); src.buffer = sb; src.connect(off.destination); src.start(); off.startRendering().then(rb => { const inter = interleaveChannels(rb); const dv = encodeWav(inter, targetSampleRate, targetChannels); resolve(new Blob([dv], {type:'audio/wav'})); }).catch(reject); }); }
+    function convertStereoToMono(buf) { const actx = new AudioContext(); const mono = actx.createBuffer(1, buf.length, buf.sampleRate); const md = mono.getChannelData(0); const l = buf.getChannelData(0); const r = buf.getChannelData(1); for(let i=0;i<buf.length;i++) md[i] = Math.max(-1, Math.min(1, (l[i]+r[i])/2)); return mono; }
+    function interleaveChannels(buf) { const ch = buf.numberOfChannels; const len = buf.length; const res = new Float32Array(len*ch); let idx=0; for(let i=0;i<len;i++) for(let c=0;c<ch;c++) res[idx++] = buf.getChannelData(c)[i]; return res; }
+    function encodeWav(samples, sr, ch) { const buf = new ArrayBuffer(44 + samples.length*2); const v = new DataView(buf); writeStr(v,0,'RIFF'); v.setUint32(4, 36+samples.length*2, true); writeStr(v,8,'WAVE'); writeStr(v,12,'fmt '); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,ch,true); v.setUint32(24,sr,true); v.setUint32(28,sr*ch*2,true); v.setUint16(32,ch*2,true); v.setUint16(34,16,true); writeStr(v,36,'data'); v.setUint32(40,samples.length*2,true); floatTo16(v,44,samples); return v; }
+    function writeStr(v,o,s) { for(let i=0;i<s.length;i++) v.setUint8(o+i, s.charCodeAt(i)); }
+    function floatTo16(out, off, inp) { for(let i=0;i<inp.length;i++,off+=2) { const s = Math.max(-1, Math.min(1, inp[i])); out.setInt16(off, s<0 ? s*0x8000 : s*0x7FFF, true); } }
 
-        // 编码为16位WAV（无冗余）
-        function encodeWav(samples, sampleRate, numChannels) {
-            const buffer = new ArrayBuffer(44 + samples.length * 2);
-            const view = new DataView(buffer);
-
-            // WAV文件头（标准最小尺寸，无冗余）
-            writeString(view, 0, 'RIFF');
-            view.setUint32(4, 36 + samples.length * 2, true);
-            writeString(view, 8, 'WAVE');
-            writeString(view, 12, 'fmt ');
-            view.setUint32(16, 16, true);
-            view.setUint16(20, 1, true);
-            view.setUint16(22, numChannels, true);
-            view.setUint32(24, sampleRate, true);
-            view.setUint32(28, sampleRate * numChannels * 2, true);
-            view.setUint16(32, numChannels * 2, true);
-            view.setUint16(34, 16, true);
-            writeString(view, 36, 'data');
-            view.setUint32(40, samples.length * 2, true);
-
-            // Float32转16位PCM（无冗余）
-            floatTo16BitPCM(view, 44, samples);
-
-            return view;
+    // ==================== 功能三：相框与黑胶唱片（合并） ====================
+    (function() {
+        const DISPLAY_WIDTH = 750; const DISPLAY_HEIGHT = Math.round(DISPLAY_WIDTH * 210 / 297);
+        const DPR = 2; const EXPORT_SCALE = 8; const SNAP_THRESHOLD = 8;
+        function createMask(wMm, hMm, count = 1, gapMm = 0) { const w = Math.round(DISPLAY_WIDTH * wMm / 297); const h = Math.round(DISPLAY_HEIGHT * hMm / 210); if (count === 1) return [{ x: (DISPLAY_WIDTH - w) / 2, y: (DISPLAY_HEIGHT - h) / 2, w, h }]; const gap = Math.round(DISPLAY_WIDTH * gapMm / 297); const totalW = count * w + (count - 1) * gap; const startX = (DISPLAY_WIDTH - totalW) / 2; const masks = []; for (let i = 0; i < count; i++) masks.push({ x: startX + i * (w + gap), y: (DISPLAY_HEIGHT - h) / 2, w, h }); return masks; }
+        class ImageEditor {
+            constructor(canvasId, wrapperId, masks) { this.canvas = document.getElementById(canvasId); this.wrapper = document.getElementById(wrapperId); this.masks = masks; this.layers = []; this.selectedIndex = -1; this.activeMaskIndex = 0; this.dragging = false; this.dragStart = { x: 0, y: 0 }; this.dragStartLayer = null; this.dragStartHandle = null; this.initCanvas(); this.bindEvents(); }
+            initCanvas() { this.canvas.width = DISPLAY_WIDTH * DPR; this.canvas.height = DISPLAY_HEIGHT * DPR; this.canvas.style.width = DISPLAY_WIDTH + 'px'; this.canvas.style.height = DISPLAY_HEIGHT + 'px'; this.draw(); }
+            getCanvasPos(e) { const rect = this.canvas.getBoundingClientRect(); return { x: (e.clientX - rect.left) * DISPLAY_WIDTH / rect.width, y: (e.clientY - rect.top) * DISPLAY_HEIGHT / rect.height }; }
+            setActiveMask(index) { if (index >= 0 && index < this.masks.length) { this.activeMaskIndex = index; this.selectedIndex = -1; this.draw(); return true; } return false; }
+            addImage(img, maskIndex = this.activeMaskIndex) { if (maskIndex >= this.masks.length) return; this.activeMaskIndex = maskIndex; const mask = this.masks[maskIndex]; const scale = Math.min(mask.w / img.width, mask.h / img.height, 1); const w = img.width * scale, h = img.height * scale; this.layers.push({ img, x: mask.x + (mask.w - w) / 2, y: mask.y + (mask.h - h) / 2, w, h, srcX: 0, srcY: 0, srcW: img.width, srcH: img.height, maskIndex }); this.selectedIndex = this.layers.length - 1; this.draw(); }
+            deleteSelected() { if (this.selectedIndex >= 0) { this.layers.splice(this.selectedIndex, 1); this.selectedIndex = Math.min(this.selectedIndex, this.layers.length - 1); this.draw(); } }
+            getHandleUnderMouse(pos) { if (this.selectedIndex < 0) return null; const l = this.layers[this.selectedIndex]; const { x, y, w, h } = l; const handles = [{ name: 'nw', x, y }, { name: 'n', x: x + w/2, y }, { name: 'ne', x: x + w, y }, { name: 'e', x: x + w, y: y + h/2 }, { name: 'se', x: x + w, y: y + h }, { name: 's', x: x + w/2, y: y + h }, { name: 'sw', x, y: y + h }, { name: 'w', x, y: y + h/2 }]; for (let h of handles) if (Math.abs(pos.x - h.x) <= 8 && Math.abs(pos.y - h.y) <= 8) return h.name; if (pos.x >= x && pos.x <= x + w && pos.y >= y && pos.y <= y + h) return 'move'; return null; }
+            applySnap(rect, excludeIndex) { let snapX = rect.x, snapY = rect.y; const targets = []; this.masks.forEach(m => { targets.push({ x: m.x, t: 'x' }, { x: m.x + m.w, t: 'x' }, { y: m.y, t: 'y' }, { y: m.y + m.h, t: 'y' }); }); this.layers.forEach((l, i) => { if (i === excludeIndex) return; targets.push({ x: l.x, t: 'x' }, { x: l.x + l.w, t: 'x' }, { y: l.y, t: 'y' }, { y: l.y + l.h, t: 'y' }); }); const e = { l: rect.x, r: rect.x + rect.w, t: rect.y, b: rect.y + rect.h }; targets.forEach(t => { if (t.t === 'x' && t.x !== undefined) { if (Math.abs(e.l - t.x) < SNAP_THRESHOLD) snapX = t.x; if (Math.abs(e.r - t.x) < SNAP_THRESHOLD) snapX = t.x - rect.w; } if (t.t === 'y' && t.y !== undefined) { if (Math.abs(e.t - t.y) < SNAP_THRESHOLD) snapY = t.y; if (Math.abs(e.b - t.y) < SNAP_THRESHOLD) snapY = t.y - rect.h; } }); return { x: snapX, y: snapY }; }
+            draw() { const c = this.canvas.getContext('2d'); const cw = this.canvas.width, ch = this.canvas.height; const sx = cw / DISPLAY_WIDTH, sy = ch / DISPLAY_HEIGHT; c.clearRect(0, 0, cw, ch); c.fillStyle = '#fff'; c.fillRect(0, 0, cw, ch); this.masks.forEach((mask, mIdx) => { c.save(); c.beginPath(); c.rect(mask.x * sx, mask.y * sy, mask.w * sx, mask.h * sy); c.clip(); this.layers.forEach(layer => { if (layer.maskIndex !== mIdx) return; c.drawImage(layer.img, layer.srcX, layer.srcY, layer.srcW, layer.srcH, layer.x * sx, layer.y * sy, layer.w * sx, layer.h * sy); }); c.restore(); c.strokeStyle = (mIdx === this.activeMaskIndex) ? '#ff4081' : '#4f6ef7'; c.lineWidth = (mIdx === this.activeMaskIndex) ? 3 * sx : 2.5 * sx; c.strokeRect(mask.x * sx, mask.y * sy, mask.w * sx, mask.h * sy); }); if (this.selectedIndex >= 0) { const l = this.layers[this.selectedIndex]; c.strokeStyle = '#ff4081'; c.lineWidth = 2 * sx; c.setLineDash([5 * sx, 3 * sx]); c.strokeRect(l.x * sx, l.y * sy, l.w * sx, l.h * sy); c.setLineDash([]); const handles = [{ n: 'nw', x: l.x, y: l.y }, { n: 'n', x: l.x + l.w/2, y: l.y }, { n: 'ne', x: l.x + l.w, y: l.y }, { n: 'e', x: l.x + l.w, y: l.y + l.h/2 }, { n: 'se', x: l.x + l.w, y: l.y + l.h }, { n: 's', x: l.x + l.w/2, y: l.y + l.h }, { n: 'sw', x: l.x, y: l.y + l.h }, { n: 'w', x: l.x, y: l.y + l.h/2 }]; const SIZE = 7 * sx; handles.forEach(h => { c.fillStyle = '#fff'; c.fillRect(h.x * sx - SIZE, h.y * sy - SIZE, SIZE*2, SIZE*2); c.strokeStyle = '#ff4081'; c.lineWidth = 2 * sx; c.strokeRect(h.x * sx - SIZE, h.y * sy - SIZE, SIZE*2, SIZE*2); }); } }
+            zoomAtCenter(delta) { if (this.selectedIndex < 0) return; const l = this.layers[this.selectedIndex]; const sf = delta > 0 ? 1.05 : 1/1.05; const nw = l.w * sf, nh = l.h * sf; if (nw < 1 || nh < 1) return; const cx = l.x + l.w/2, cy = l.y + l.h/2; l.w = nw; l.h = nh; l.x = cx - nw/2; l.y = cy - nh/2; this.draw(); }
+            bindEvents() { this.canvas.addEventListener('mousedown', e => { const pos = this.getCanvasPos(e); if (this.selectedIndex >= 0) { const handle = this.getHandleUnderMouse(pos); if (handle) { this.dragging = true; this.dragStart = { x: pos.x, y: pos.y }; this.dragStartLayer = { ...this.layers[this.selectedIndex] }; this.dragStartHandle = handle; e.preventDefault(); return; } } for (let i = this.layers.length - 1; i >= 0; i--) { const l = this.layers[i]; if (pos.x >= l.x && pos.x <= l.x + l.w && pos.y >= l.y && pos.y <= l.y + l.h) { this.selectedIndex = i; this.activeMaskIndex = l.maskIndex; this.draw(); return; } } if (this.masks.length > 1) { for (let i = 0; i < this.masks.length; i++) { const m = this.masks[i]; if (pos.x >= m.x && pos.x <= m.x + m.w && pos.y >= m.y && pos.y <= m.y + m.h) { this.activeMaskIndex = i; this.selectedIndex = -1; this.draw(); return; } } } this.selectedIndex = -1; this.draw(); }); window.addEventListener('mousemove', e => { if (!this.dragging || this.selectedIndex < 0) return; const pos = this.getCanvasPos(e); const layer = this.layers[this.selectedIndex]; const dx = pos.x - this.dragStart.x, dy = pos.y - this.dragStart.y; const base = this.dragStartLayer, handle = this.dragStartHandle; if (handle === 'move') { layer.x = base.x + dx; layer.y = base.y + dy; const sn = this.applySnap({ x: layer.x, y: layer.y, w: layer.w, h: layer.h }, this.selectedIndex); layer.x = sn.x; layer.y = sn.y; } else if (['nw','ne','se','sw'].includes(handle)) { const cx = base.x + base.w/2, cy = base.y + base.h/2, asp = base.srcW / base.srcH; let nw, nh; if (handle === 'se') { nw = Math.max(1, base.w + dx); nh = nw / asp; } else if (handle === 'nw') { nw = Math.max(1, base.w - dx); nh = nw / asp; } else if (handle === 'ne') { nw = Math.max(1, base.w + dx); nh = nw / asp; } else { nw = Math.max(1, base.w - dx); nh = nw / asp; } layer.w = nw; layer.h = nh; layer.x = cx - nw/2; layer.y = cy - nh/2; } else { if (handle === 'e') { layer.w = Math.max(1, base.w + dx); layer.x = base.x; layer.y = base.y; layer.h = base.h; const sx2 = layer.w / base.w; layer.srcW = base.srcW * sx2; layer.srcX = base.srcX; layer.srcY = base.srcY; layer.srcH = base.srcH; } else if (handle === 'w') { const nw2 = Math.max(1, base.w - dx); const r = base.x + base.w; layer.w = nw2; layer.x = r - nw2; layer.y = base.y; layer.h = base.h; const sx2 = nw2 / base.w; layer.srcW = base.srcW * sx2; layer.srcX = base.srcX + base.srcW - layer.srcW; layer.srcY = base.srcY; layer.srcH = base.srcH; } else if (handle === 's') { layer.h = Math.max(1, base.h + dy); layer.y = base.y; layer.x = base.x; layer.w = base.w; const sy2 = layer.h / base.h; layer.srcH = base.srcH * sy2; layer.srcY = base.srcY; layer.srcX = base.srcX; layer.srcW = base.srcW; } else { const nh2 = Math.max(1, base.h - dy); const b = base.y + base.h; layer.h = nh2; layer.y = b - nh2; layer.x = base.x; layer.w = base.w; const sy2 = nh2 / base.h; layer.srcH = base.srcH * sy2; layer.srcY = base.srcY + base.srcH - layer.srcH; layer.srcX = base.srcX; layer.srcW = base.srcW; } } this.draw(); }); window.addEventListener('mouseup', () => { this.dragging = false; }); this.canvas.addEventListener('wheel', e => { e.preventDefault(); if (this.selectedIndex >= 0 && !this.dragging) this.zoomAtCenter(e.deltaY); }, { passive: false }); }
+            exportCanvas() { const ew = DISPLAY_WIDTH * EXPORT_SCALE, eh = DISPLAY_HEIGHT * EXPORT_SCALE; const ec = document.createElement('canvas'); ec.width = ew; ec.height = eh; const cx = ec.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0,0,ew,eh); this.masks.forEach((mask, mIdx) => { cx.save(); cx.beginPath(); cx.rect(mask.x * EXPORT_SCALE, mask.y * EXPORT_SCALE, mask.w * EXPORT_SCALE, mask.h * EXPORT_SCALE); cx.clip(); this.layers.forEach(layer => { if (layer.maskIndex !== mIdx) return; cx.drawImage(layer.img, layer.srcX, layer.srcY, layer.srcW, layer.srcH, layer.x * EXPORT_SCALE, layer.y * EXPORT_SCALE, layer.w * EXPORT_SCALE, layer.h * EXPORT_SCALE); }); cx.restore(); }); return ec; }
         }
+        const editorA = new ImageEditor('canvasA', 'wrapperA', createMask(248, 200, 1));
+        const editorB = new ImageEditor('canvasB', 'wrapperB', createMask(248, 200, 1));
+        const editorC = new ImageEditor('canvasC', 'wrapperC', createMask(80, 195, 2, 10));
+        function setupUpload(btnId, inputId, editor, maskIdx = 0) { document.getElementById(btnId).addEventListener('click', () => document.getElementById(inputId).click()); document.getElementById(inputId).addEventListener('change', function(e) { if (!e.target.files.length) return; Array.from(e.target.files).forEach(f => { if (!f.type.startsWith('image/')) return; const r = new FileReader(); r.onload = ev => { const i = new Image(); i.onload = () => editor.addImage(i, maskIdx); i.src = ev.target.result; }; r.readAsDataURL(f); }); e.target.value = ''; }); }
+        setupUpload('btnUploadA','uploadA',editorA); setupUpload('btnUploadB','uploadB',editorB); setupUpload('btnUploadCLeft','uploadC_left',editorC,0); setupUpload('btnUploadCRight','uploadC_right',editorC,1);
+        document.getElementById('btnDeleteA').addEventListener('click',()=>editorA.deleteSelected()); document.getElementById('btnDeleteB').addEventListener('click',()=>editorB.deleteSelected()); document.getElementById('btnDeleteC').addEventListener('click',()=>editorC.deleteSelected());
 
-        // 辅助函数
-        function writeString(view, offset, string) {
-            for (let i = 0; i < string.length; i++) {
-                view.setUint8(offset + i, string.charCodeAt(i));
-            }
-        }
+        // 黑胶唱片
+        const CIRCLE_DIAMETER = Math.round(DISPLAY_WIDTH * 40 / 297), CIRCLE_RADIUS = CIRCLE_DIAMETER/2, COLS=6, ROWS=4, TOTAL=24;
+        const circlePos = (()=>{ const p=[]; const tw=COLS*CIRCLE_DIAMETER, th=ROWS*CIRCLE_DIAMETER; const gh=(DISPLAY_WIDTH-tw)/(COLS+1), gv=(DISPLAY_HEIGHT-th)/(ROWS+1); for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) p.push({ cx:gh+CIRCLE_RADIUS+c*(CIRCLE_DIAMETER+gh), cy:gv+CIRCLE_RADIUS+r*(CIRCLE_DIAMETER+gv), radius:CIRCLE_RADIUS }); return p; })();
+        const canvas2 = document.getElementById('canvas2'), hiddenFile2 = document.getElementById('hiddenFileInput2');
+        const badgeFilled = document.getElementById('badgeFilled'), btnReplace = document.getElementById('btnReplaceCircle');
+        let circleData = Array(TOTAL).fill().map(()=>({ img:null, ox:0, oy:0, scale:1 })), selIdx=-1, hoverIdx=-1;
+        let vinylReady = false; window.vinylReady = false;
+        let drag2=false, ds2={x:0,y:0}, doff={x:0,y:0};
 
-        function floatTo16BitPCM(output, offset, input) {
-            for (let i = 0; i < input.length; i++, offset += 2) {
-                const s = Math.max(-1, Math.min(1, input[i]));
-                output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
-            }
-        }
-    </script>
+        function draw2(){ if(!vinylReady)return; const c2=canvas2.getContext('2d'), cw=canvas2.width,ch=canvas2.height, sx=cw/DISPLAY_WIDTH,sy=ch/DISPLAY_HEIGHT; c2.clearRect(0,0,cw,ch); c2.fillStyle='#fff'; c2.fillRect(0,0,cw,ch); circlePos.forEach((p,i)=>{ const cx=p.cx*sx, cy=p.cy*sy, r=p.radius*sx; c2.save(); c2.beginPath(); c2.arc(cx,cy,r,0,Math.PI*2); c2.clip(); const d=circleData[i]; if(d.img){ const dw=d.img.width*d.scale*sx,dh=d.img.height*d.scale*sy; c2.drawImage(d.img, (p.cx+d.ox)*sx-dw/2, (p.cy+d.oy)*sy-dh/2,dw,dh); } else { c2.fillStyle='#f5f6fa'; c2.fillRect(cx-r,cy-r,r*2,r*2); } c2.restore(); c2.beginPath(); c2.arc(cx,cy,r,0,Math.PI*2); c2.strokeStyle=i===selIdx?'#4f6ef7':(i===hoverIdx?'rgba(79,110,247,0.7)':(d.img?'rgba(79,110,247,0.4)':'#d5dae5')); c2.lineWidth=(i===selIdx?3:2)*sx; c2.stroke(); }); const f=circleData.filter(d=>d.img).length; badgeFilled.textContent=`已填充: ${f}/24`; badgeFilled.className=f===TOTAL?'badge warn':(f?'badge':''); btnReplace.disabled=selIdx<0||!circleData[selIdx]?.img; }
+        function initVinylCanvas(){ canvas2.width=DISPLAY_WIDTH*DPR; canvas2.height=DISPLAY_HEIGHT*DPR; canvas2.style.width=DISPLAY_WIDTH+'px'; canvas2.style.height=DISPLAY_HEIGHT+'px'; vinylReady=true; window.vinylReady=true; draw2(); }
+        window.initVinylCanvas = initVinylCanvas;
+        function pos2(e){ const r=canvas2.getBoundingClientRect(); return {x:(e.clientX-r.left)*DISPLAY_WIDTH/r.width, y:(e.clientY-r.top)*DISPLAY_HEIGHT/r.height}; }
+        function idx2(p){ for(let i=0;i<circlePos.length;i++) if(Math.hypot(p.x-circlePos[i].cx, p.y-circlePos[i].cy)<=CIRCLE_RADIUS+3) return i; return -1; }
+        canvas2.addEventListener('mousedown', e=>{ const p=pos2(e), i=idx2(p); if(i<0){ selIdx=-1; draw2(); return; } if(!circleData[i].img){ selIdx=i; hiddenFile2.value=''; hiddenFile2.click(); draw2(); return; } if(selIdx!==i){ selIdx=i; draw2(); } drag2=true; ds2={x:p.x,y:p.y}; doff={x:circleData[i].ox, y:circleData[i].oy}; e.preventDefault(); });
+        window.addEventListener('mousemove', e=>{ if(document.querySelector('[data-content="2"]').classList.contains('active')){ const p=pos2(e), nh=idx2(p); if(nh!==hoverIdx){ hoverIdx=nh; draw2(); } } if(!drag2||selIdx<0) return; const p=pos2(e); circleData[selIdx].ox=doff.x+p.x-ds2.x; circleData[selIdx].oy=doff.y+p.y-ds2.y; draw2(); });
+        window.addEventListener('mouseup', ()=>{ drag2=false; });
+        canvas2.addEventListener('dblclick', e=>{ const i=idx2(pos2(e)); if(i>=0&&circleData[i].img){ selIdx=i; hiddenFile2.value=''; hiddenFile2.click(); draw2(); } });
+        btnReplace.addEventListener('click', ()=>{ if(selIdx>=0&&circleData[selIdx].img){ hiddenFile2.value=''; hiddenFile2.click(); } });
+        hiddenFile2.addEventListener('change', function(){ if(this.files[0]&&selIdx>=0){ const r=new FileReader(); r.onload=ev=>{ const img=new Image(); img.onload=()=>{ const s=Math.max((2*CIRCLE_RADIUS)/img.width,(2*CIRCLE_RADIUS)/img.height); circleData[selIdx]={img,ox:0,oy:0,scale:s}; draw2(); }; img.src=ev.target.result; }; r.readAsDataURL(this.files[0]); } });
+        document.getElementById('btnClearAll2').addEventListener('click', ()=>{ circleData=Array(TOTAL).fill().map(()=>({img:null,ox:0,oy:0,scale:1})); selIdx=-1; hoverIdx=-1; draw2(); });
+
+        document.getElementById('btnExportPDF').addEventListener('click', async () => {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+            const width = 297, height = 210;
+            let imgData = editorA.exportCanvas().toDataURL('image/jpeg', 1.0);
+            pdf.addImage(imgData, 'JPEG', 0, 0, width, height);
+            imgData = editorB.exportCanvas().toDataURL('image/jpeg', 1.0);
+            pdf.addPage();
+            pdf.addImage(imgData, 'JPEG', 0, 0, width, height);
+            imgData = editorC.exportCanvas().toDataURL('image/jpeg', 1.0);
+            pdf.addPage();
+            pdf.addImage(imgData, 'JPEG', 0, 0, width, height);
+            const vc = document.createElement('canvas'); vc.width = DISPLAY_WIDTH * EXPORT_SCALE; vc.height = DISPLAY_HEIGHT * EXPORT_SCALE;
+            const vctx = vc.getContext('2d'); vctx.fillStyle='#fff'; vctx.fillRect(0,0,vc.width,vc.height);
+            circlePos.forEach((p,i)=>{ const cx=p.cx*EXPORT_SCALE, cy=p.cy*EXPORT_SCALE, r=p.radius*EXPORT_SCALE; vctx.save(); vctx.beginPath(); vctx.arc(cx,cy,r,0,Math.PI*2); vctx.clip(); const d=circleData[i]; if(d.img){ const dw=d.img.width*d.scale*EXPORT_SCALE,dh=d.img.height*d.scale*EXPORT_SCALE; vctx.drawImage(d.img,(p.cx+d.ox)*EXPORT_SCALE-dw/2,(p.cy+d.oy)*EXPORT_SCALE-dh/2,dw,dh); } vctx.restore(); });
+            imgData = vc.toDataURL('image/jpeg', 1.0);
+            pdf.addPage();
+            pdf.addImage(imgData, 'JPEG', 0, 0, width, height);
+            pdf.save('相框定制_高清A4.pdf');
+            showToast('✅ PDF已导出，共四页');
+        });
+
+        const tab2 = document.querySelector('[data-content="2"]');
+        const observer = new MutationObserver(() => { if (tab2.classList.contains('active') && !vinylReady) initVinylCanvas(); });
+        observer.observe(tab2, { attributes: true, attributeFilter: ['class'] });
+        if (tab2.classList.contains('active') && !vinylReady) initVinylCanvas();
+    })();
+</script>
 </body>
 </html>
