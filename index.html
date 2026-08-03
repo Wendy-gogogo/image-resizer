@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>小羊的音乐相框综合工具 · 综合媒体工具箱</title>
+    <title>小羊的音乐相框综合工具</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -162,7 +162,7 @@
         <div id="frameToolContainer">
             <div class="canvas-panels">
                 <div class="canvas-card">
-                    <div class="card-header"><span class="title text-lg">📋 相框内正面图 · 248×200mm 蒙版</span>
+                    <div class="card-header"><span class="title text-lg">📋 相框内正面图</span>
                         <div class="upload-group">
                             <input type="file" id="uploadA" accept="image/*" multiple style="display:none;">
                             <button class="btn btn-sm" id="btnUploadA">📤 添加图片</button>
@@ -172,7 +172,7 @@
                     <div class="canvas-wrapper" id="wrapperA"><canvas id="canvasA"></canvas></div>
                 </div>
                 <div class="canvas-card">
-                    <div class="card-header"><span class="title text-lg">📋 相框背面图 · 248×200mm 蒙版</span>
+                    <div class="card-header"><span class="title text-lg">📋 相框背面图</span>
                         <div class="upload-group">
                             <input type="file" id="uploadB" accept="image/*" multiple style="display:none;">
                             <button class="btn btn-sm" id="btnUploadB">📤 添加图片</button>
@@ -183,7 +183,7 @@
                 </div>
                 <div class="canvas-card">
                     <div class="card-header">
-                        <span class="title text-lg">📋 相框内侧边图 · 两条竖向80×195mm蒙版</span>
+                        <span class="title text-lg">📋 相框内侧边图 · 两条竖向</span>
                         <div class="upload-group">
                             <input type="file" id="uploadC_left" accept="image/*" multiple style="display:none;">
                             <input type="file" id="uploadC_right" accept="image/*" multiple style="display:none;">
@@ -210,7 +210,7 @@
                 </div>
             </div>
             <div class="text-center mt-6">
-                <button id="btnExportPDF" class="px-8 py-4 bg-green-600 text-white rounded hover:bg-green-700 text-xl font-semibold">📄 导出A4高清PDF（四页）</button>
+                <button id="btnExportPDF" class="px-8 py-4 bg-green-600 text-white rounded hover:bg-green-700 text-xl font-semibold">📄 导出高清PDF并发送给帅气的小羊</button>
             </div>
         </div>
     </div>
@@ -415,7 +415,7 @@
             imgData = vc.toDataURL('image/jpeg', 1.0);
             pdf.addPage();
             pdf.addImage(imgData, 'JPEG', 0, 0, width, height);
-            pdf.save('相框定制_高清A4.pdf');
+            pdf.save('相框定制_高清.pdf');
             showToast('✅ PDF已导出，共四页');
         });
 
