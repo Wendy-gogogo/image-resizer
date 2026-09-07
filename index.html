@@ -88,7 +88,7 @@
     <div class="tab-content active bg-white p-6 rounded-lg shadow-md" data-content="0">
         <h2 class="text-2xl font-semibold text-gray-700 mb-2">屏幕图片编辑（296×240 横屏编辑与导出）</h2>
         <p class="text-gray-600 mb-2 text-center text-base">左侧上传准备好的图片，列表可选择每一张图片进行调整其在屏幕显示的大小和位置，导出后复制到内存卡中1-9文件夹即可</p>
-        <p class="text-center text-orange-500 text-sm mb-4">⚠️ 提醒：导出的图片不能用中文命名，不然播放不了，导出文件系统自动将按序号命名（如 picture-1.jpg）</p>
+        <p class="text-center text-orange-500 text-sm mb-4">⚠️ 提醒：导出的图片可用拼音重新命名，不能用中文命名，不然播放不了</p>
         <div class="flex flex-col lg:flex-row gap-6">
             <div class="lg:w-64 flex-shrink-0">
                 <div class="flex items-center justify-between mb-3">
@@ -128,7 +128,7 @@
     <div class="tab-content bg-white p-6 rounded-lg shadow-md" data-content="1">
         <h2 class="text-2xl font-semibold text-gray-700 mb-4">音乐文件编辑（输出 44.1kHz 16位高质量WAV）</h2>
         <p class="text-gray-600 mb-2 text-center text-base">上传准备好的音乐文件（MP3，WAV，录音等），批量转换高质量WAV音频文件，下载后复制到内存卡对应1-9文件夹即可</p>
-        <p class="text-center text-orange-500 text-sm mb-4">⚠️ 提醒：导出的音频不能用中文命名，不然播放不了，导出文件系统将按序号命名（如 music-1.wav）</p>
+        <p class="text-center text-orange-500 text-sm mb-4">⚠️ 提醒：导出的音频可用拼音重新命名，不能用中文命名，不然播放不了</p>
         <input type="hidden" id="audioChannelMono" value="mono">
         <div class="flex flex-col lg:flex-row gap-6">
             <div class="lg:w-72 flex-shrink-0">
@@ -210,7 +210,7 @@
                 </div>
             </div>
             <div class="text-center mt-6">
-                <button id="btnExportPDF" class="px-8 py-4 bg-green-600 text-white rounded hover:bg-green-700 text-xl font-semibold">📄 导出高清PDF，可线下找广告店用A4铜版纸打印，尺寸适配相框</button>
+                <button id="btnExportPDF" class="px-8 py-4 bg-green-600 text-white rounded hover:bg-green-700 text-xl font-semibold">📄 导出高清PDF，可线下找广告店用A4铜版纸打印，打印并裁剪后，尺寸适配相框</button>
             </div>
         </div>
     </div>
